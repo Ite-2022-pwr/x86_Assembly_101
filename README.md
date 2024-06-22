@@ -2,6 +2,8 @@
 
 Autor: [Artur Kręgiel](https://github.com/arkregiel) <!-- aczkolwiek Chat GPT pomógł bo trochę mi się nie chce tego wszystkiego z palca pisać xd -->
 
+Specjalne podziękowania za pomoc dla [Marcina](https://github.com/TheNNX), jesteś koxem <3
+
 ## Wstęp
 
 Asembler wiele osób przeraża (tbh nie wiem czemu), jednak trzeba go trochę poznać, ponieważ na kierunku Informatyka techniczna na PWr (i na innych informatycznych kierunkach na innych uczelniach) ma się z nim styczność na zajęciach.
@@ -12,7 +14,7 @@ Ten tutorial niech będzie bootcampem, który pozwoli Ci - mam nadzieję - zdać
 
 Nie zamierzam wchodzić w zbytnie szczegóły, a bardziej oswoić Cię z językiem asemblera i omówić podstawy.
 
-Postaram się też podać przydatne źródła informacji z Internetu, z których sam korzystam oraz podrzucić kilka wskazówek, ale przygotuj się, że dużą część pracy musisz wykonać samodzielnie. Google będzie Twoim przyjacielem.
+Postaram się też podać [przydatne źródła informacji](#materiały-do-obczajenia) z Internetu, z których sam korzystam oraz podrzucić kilka wskazówek, ale przygotuj się, że dużą część pracy musisz wykonać samodzielnie. Google będzie Twoim przyjacielem.
 
 Mam nadzieję, że poniższa lektura jakkolwiek ułatwi Ci otrzymanie zaliczenia.
 
@@ -40,8 +42,6 @@ Powodzenia <3
       - [Przykład:](#przykład-5)
   - [Zestaw instrukcji (ISA - Instruction Set Architecture)](#zestaw-instrukcji-isa---instruction-set-architecture)
   - [Rejestry](#rejestry)
-    - [Rejestry x86](#rejestry-x86)
-    - [Rejestry x86\_64](#rejestry-x86_64)
   - [Tryby adresowania](#tryby-adresowania)
     - [1. **Adresowanie natychmiastowe (immediate addressing)**](#1-adresowanie-natychmiastowe-immediate-addressing)
     - [2. **Adresowanie rejestrowe (register addressing)**](#2-adresowanie-rejestrowe-register-addressing)
@@ -51,15 +51,6 @@ Powodzenia <3
     - [6. **Adresowanie indeksowe (indexed addressing)**](#6-adresowanie-indeksowe-indexed-addressing)
     - [7. **Adresowanie bazowe z indeksem i przesunięciem (base-indexed with displacement addressing)**](#7-adresowanie-bazowe-z-indeksem-i-przesunięciem-base-indexed-with-displacement-addressing)
     - [8. **Adresowanie względne (relative addressing)**](#8-adresowanie-względne-relative-addressing)
-    - [Przykłady kodu asemblera x86 wykorzystującego różne sposoby adresowania:](#przykłady-kodu-asemblera-x86-wykorzystującego-różne-sposoby-adresowania)
-      - [Adresowanie natychmiastowe:](#adresowanie-natychmiastowe)
-      - [Adresowanie rejestrowe:](#adresowanie-rejestrowe)
-      - [Adresowanie bezpośrednie:](#adresowanie-bezpośrednie)
-      - [Adresowanie pośrednie:](#adresowanie-pośrednie)
-      - [Adresowanie bazowe:](#adresowanie-bazowe)
-      - [Adresowanie indeksowe:](#adresowanie-indeksowe)
-      - [Adresowanie bazowe z indeksem i przesunięciem:](#adresowanie-bazowe-z-indeksem-i-przesunięciem)
-      - [Adresowanie względne:](#adresowanie-względne)
   - [Jak właściwie wygląda program?](#jak-właściwie-wygląda-program)
   - [Pierwszy program](#pierwszy-program)
   - [Jak to uruchomić?](#jak-to-uruchomić)
@@ -76,6 +67,8 @@ Powodzenia <3
   - [SIMD](#simd)
   - [AVX](#avx)
   - [**Przykładowe programy**](#przykładowe-programy)
+    - [NWD](#nwd)
+    - [Basic Input/Output](#basic-inputoutput)
   - [**Szybka nauka asemblera - cheatcode**](#szybka-nauka-asemblera---cheatcode)
   - [Materiały do obczajenia](#materiały-do-obczajenia)
 
@@ -224,12 +217,6 @@ Każdy procesor ma swój unikalny zestaw instrukcji, które określają, jakie o
 
 Procesory mają różne układy rejestrów, które są małymi, szybkimi pamięciami wewnętrznymi używanymi do przechowywania danych i adresów. Na przykład procesor Intel x86 ma rejestry takie jak `eax`, `ebx`, `ecx`, `edx`, podczas gdy procesor ARM ma rejestry takie jak `r0`, `r1`, `r2`.
 
-### Rejestry x86
-
-
-
-### Rejestry x86_64
-
 
 
 ## Tryby adresowania
@@ -241,7 +228,11 @@ Tryby adresowania w architekturze x86 odnoszą się do metod, jakie procesor wyk
 Wartość operandu jest bezpośrednio określona w instrukcji.
 
 ```asm
+; Intel
 mov eax, 5  ; przypisuje bezpośrednią wartość 5 do rejestru eax
+
+; AT&T
+movl $5, %eax ; przypisuje bezpośrednią wartość 5 do rejestru eax
 ```
 
 ### 2. **Adresowanie rejestrowe (register addressing)**
@@ -249,7 +240,11 @@ mov eax, 5  ; przypisuje bezpośrednią wartość 5 do rejestru eax
 Operand znajduje się w rejestrze.
 
 ```asm
+; Intel
 mov eax, ebx  ; przenosi wartość z rejestru ebx do rejestru eax
+
+; AT&T
+movl %ebx, %eax ; przenosi wartość z rejestru ebx do rejestru eax
 ```
 
 ### 3. **Adresowanie bezpośrednie (direct addressing)**
@@ -257,7 +252,11 @@ mov eax, ebx  ; przenosi wartość z rejestru ebx do rejestru eax
 Operand znajduje się w określonym adresie pamięci.
 
 ```asm
+; Intel
 mov eax, [0x1000]  ; przenosi wartość z adresu pamięci 0x1000 do rejestru eax
+
+; AT&T
+movl 0x1000,%eax  ; przenosi wartość z adresu pamięci 0x1000 do rejestru eax
 ```
 
 ### 4. **Adresowanie pośrednie (indirect addressing)**
@@ -265,7 +264,11 @@ mov eax, [0x1000]  ; przenosi wartość z adresu pamięci 0x1000 do rejestru eax
 Operand znajduje się w adresie pamięci wskazywanym przez rejestr.
 
 ```asm
+; Intel
 mov eax, [ebx]  ; przenosi wartość z adresu pamięci wskazywanego przez rejestr ebx do rejestru eax
+
+; AT&T
+movl (%ebx),%eax ; przenosi wartość z adresu pamięci wskazywanego przez rejestr ebx do rejestru eax
 ```
 
 ### 5. **Adresowanie bazowe (base addressing)**
@@ -273,7 +276,11 @@ mov eax, [ebx]  ; przenosi wartość z adresu pamięci wskazywanego przez rejest
 Operand znajduje się w pamięci w adresie określonym przez rejestr bazowy plus przesunięcie.
 
 ```asm
+; Intel
 mov eax, [ebx + 4]  ; przenosi wartość z adresu pamięci (adres w ebx + 4) do rejestru eax
+
+; AT&T
+movl 4(%ebx), %eax   ; przenosi wartość z adresu pamięci (adres w ebx + 4) do rejestru eax
 ```
 
 ### 6. **Adresowanie indeksowe (indexed addressing)**
@@ -281,7 +288,11 @@ mov eax, [ebx + 4]  ; przenosi wartość z adresu pamięci (adres w ebx + 4) do 
 Operand znajduje się w pamięci w adresie określonym przez rejestr indeksowy plus przesunięcie.
 
 ```asm
+; Intel
 mov eax, [ebx + ecx]  ; przenosi wartość z adresu pamięci (adres w ebx + wartość w ecx) do rejestru eax
+
+; AT&T
+movl (%ebx,%ecx), %eax ; przenosi wartość z adresu pamięci (adres w ebx + wartość w ecx) do rejestru eax
 ```
 
 ### 7. **Adresowanie bazowe z indeksem i przesunięciem (base-indexed with displacement addressing)**
@@ -289,7 +300,11 @@ mov eax, [ebx + ecx]  ; przenosi wartość z adresu pamięci (adres w ebx + wart
 Operand znajduje się w pamięci w adresie określonym przez rejestr bazowy, rejestr indeksowy i przesunięcie.
 
 ```asm
+; Intel
 mov eax, [ebx + ecx + 4]  ; przenosi wartość z adresu pamięci (adres w ebx + wartość w ecx + 4) do rejestru eax
+
+; AT&T
+movl 4(%ebx,%ecx), %eax    ; przenosi wartość z adresu pamięci (adres w ebx + wartość w ecx + 4) do rejestru eax
 ```
 
 ### 8. **Adresowanie względne (relative addressing)**
@@ -300,63 +315,13 @@ Adres jest określony jako przesunięcie względem aktualnej wartości licznika 
 jmp label  ; skok do adresu określonego etykietą 'label' (relatywny do aktualnej wartości eip)
 ```
 
-### Przykłady kodu asemblera x86 wykorzystującego różne sposoby adresowania:
-
-#### Adresowanie natychmiastowe:
-
-```asm
-mov eax, 10      ; wartość 10 jest natychmiastowa
-```
-
-#### Adresowanie rejestrowe:
-
-```asm
-mov eax, ebx     ; przenosi wartość z rejestru ebx do rejestru eax
-```
-
-#### Adresowanie bezpośrednie:
-
-```asm
-mov eax, [0x1000]  ; przenosi wartość z adresu pamięci 0x1000 do rejestru eax
-```
-
-#### Adresowanie pośrednie:
-
-```asm
-mov eax, [ebx]   ; przenosi wartość z adresu pamięci wskazywanego przez rejestr ebx do rejestru eax
-```
-
-#### Adresowanie bazowe:
-
-```asm
-mov eax, [ebx + 4]  ; przenosi wartość z adresu pamięci (adres w ebx + 4) do rejestru eax
-```
-
-#### Adresowanie indeksowe:
-
-```asm
-mov eax, [ebx + ecx]  ; przenosi wartość z adresu pamięci (adres w ebx + wartość w ecx) do rejestru eax
-```
-
-#### Adresowanie bazowe z indeksem i przesunięciem:
-
-```asm
-mov eax, [ebx + ecx + 4]  ; przenosi wartość z adresu pamięci (adres w ebx + wartość w ecx + 4) do rejestru eax
-```
-
-#### Adresowanie względne:
-
-```asm
-label:
-  ; ... (kod)
-  jmp label  ; skok do etykiety 'label'
-```
-
 Te sposoby adresowania pozwalają na różnorodne i elastyczne operacje na danych w programach asemblerowych, umożliwiając precyzyjne kontrolowanie przepływu danych i wykonywania programu.
 
 Każda architektura procesora może używać różnych sposobów adresowania pamięci. Na przykład procesor x86 może używać trybu adresowania bezpośredniego, pośredniego, bazowego, z przesunięciem i wielu innych. Procesor ARM również posiada swoje specyficzne sposoby adresowania, które mogą się różnić od x86.
 
 ## Jak właściwie wygląda program?
+
+![Memory layout of C programs](https://media.geeksforgeeks.org/wp-content/uploads/memoryLayoutC.jpg)
 
 ## Pierwszy program
 
@@ -579,6 +544,14 @@ Teraz kod asemblera musimy przekształcić na plik *object*, a następnie zlinko
 
 Nie będę się wdawać w szczegóły, ale musisz wykonać te dwie komendy:
 
+- Dla 32-bitowego
+
+```
+$ as --32 -o hello.o hello.s
+$ ld -m elf_i386 -o hello hello.o
+```
+
+- Dla 64-bitowego
 ```
 $ as -o hello.o hello.s
 $ ld -o hello hello.o
@@ -624,6 +597,15 @@ Tłumaczenie czym jest `-no-pie` jest poza zakresem tego bootcampu, nie musisz w
 ### NASM
 
 Z `nasm` jest podobnie jak w poprzednim przykładzie:
+
+- Dla 32-bitowego
+
+```
+$ nasm -f elf32 hello.asm
+$ ld -m elf_i386 -o hello hello.o
+```
+
+- Dla 64-bitowego
 
 ```
 $ nasm -f elf64 hello.asm
@@ -686,6 +668,53 @@ To jak to działa: `make` przeczyta plik *makefile* i zobaczy regułkę `hello`,
 
 ### przedsmak inżynierii wstecznej (*reverse engineering*) - `objdump`
 
+Wszystko jest open source, jeśli potrafi się czytać assembly. Programy można *zdeasemblować* (ang. **), czyli z postaci binarnej dostać z powrotem kod asemblera. Można to uzyskać dzięki takim narzędziom jak `objdump`:
+
+```
+$ objdump -d ./hello64
+
+./hello64:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000401000 <_start>:
+  401000:       48 c7 c0 01 00 00 00    mov    $0x1,%rax
+  401007:       48 c7 c7 01 00 00 00    mov    $0x1,%rdi
+  40100e:       48 c7 c6 00 20 40 00    mov    $0x402000,%rsi
+  401015:       48 c7 c2 0f 00 00 00    mov    $0xf,%rdx
+  40101c:       0f 05                   syscall
+  40101e:       48 c7 c0 3c 00 00 00    mov    $0x3c,%rax
+  401025:       48 c7 c7 00 00 00 00    mov    $0x0,%rdi
+  40102c:       0f 05                   syscall
+                                                    
+```
+
+Jeśli chcemy uzyskać kod w ~~normalnej~~ notacji Intela, należy dodać flagę `-Mintel`:
+
+```
+Disassembly of section .text:
+
+0000000000401000 <_start>:
+  401000:       48 c7 c0 01 00 00 00    mov    rax,0x1
+  401007:       48 c7 c7 01 00 00 00    mov    rdi,0x1
+  40100e:       48 c7 c6 00 20 40 00    mov    rsi,0x402000
+  401015:       48 c7 c2 0f 00 00 00    mov    rdx,0xf
+  40101c:       0f 05                   syscall
+  40101e:       48 c7 c0 3c 00 00 00    mov    rax,0x3c
+  401025:       48 c7 c7 00 00 00 00    mov    rdi,0x0
+  40102c:       0f 05                   syscall
+```
+
+Liczba `0x402000` to adres, gdzie znajduje się `msg`.
+
+Tak wygląda mój alias na komendę `objdump`:
+
+```
+$ alias objdump
+objdump='objdump -d -Mintel --disassembler-color=color --visualize-jumps=extended-color'
+```
+
 ## Robienie wyrażeń warunkowych i pętli
 
 ## Pisanie i wywoływanie funkcji
@@ -710,16 +739,182 @@ Dlatego wrzucę kilka programów, które miałem okazję napisać.
 
 Różne programy znajdują się też w innych repozytoriach z [OiAK](https://github.com/Ite-2022-pwr/OiAK).
 
+### NWD
 
+```asm
+# NWD
+.text
+  .global _start
+
+_start:
+  push  %ebp
+  mov   %esp, %ebp
+
+  push $16          # a
+  push $24          # b
+  call  nwd
+
+  mov   %ebp, %esp
+  pop   %ebp
+
+  mov   %eax, %ebx
+  mov   $1, %eax    # exit
+  int   $0x80
+
+nwd:
+  push  %ebp
+  mov   %esp, %ebp
+
+  while:
+    movl  12(%ebp), %eax   # a
+    movl  8(%ebp), %ebx   # b
+    cmp   $0, %ebx
+    jz    return          # if b == 0: return a
+
+    mov   %eax, %ecx
+    xor   %edx, %edx
+    idiv  %ebx
+    mov   %ebx, %eax      # a = b
+    mov   %edx, %ebx      # b = a % b
+
+    mov   %eax, 12(%ebp)
+    mov   %ebx, 8(%ebp)
+    jmp   while
+
+  return:
+  mov   %ebp, %esp
+  pop   %ebp
+  
+  ret
+```
+
+### Basic Input/Output
+
+```asm
+BITS 64
+
+section .data
+	text1 db "What's your name? "
+	text2 db "Hello, "
+
+section .bss
+	name resb  32
+
+section .text
+
+global _start
+
+_start:
+	call _printText1
+	call _getName
+	call _printText2
+	call _printName
+
+	mov rax, 60
+	mov rdi, 0
+	syscall
+
+_getName:
+	mov rax, 0
+	mov rdi, 0
+	mov rsi, name
+	mov rdx, 32
+	syscall
+	ret
+
+_printText1:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, text1
+	mov rdx, 18
+	syscall
+	ret
+
+_printText2:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, text2
+	mov rdx, 7
+	syscall
+	ret
+
+_printName:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, name
+	mov rdx, 32
+	syscall
+	ret
+```
 
 ## **Szybka nauka asemblera - cheatcode**
+
+`gcc` nie musi wypluwać gotowego pliku binarnego. Jeśli użyjemy flagi `-S` to wypluje nam przetłumaczony kod z C na asemblera. Co prawda będzie ona zawierał różne pierdoły, które nas niekoniecznie będą interesować podczas nauki (zwłaszcza na studia), a labele będą miały mało mówiące nazwy typu `.L69`, ale zawsze coś.
+
+Możemy napisać prosty kod w C, a potem porównać to co napisaliśmy z wygenerowanym przez `gcc` asemblerem i zobaczyć, jak to się przekłada jedno na drugie.
+
+Przykładowo, *Hello World* będzie wyglądać w C tak:
+
+```cpp
+#include <stdio.h>
+
+int main()
+{
+    printf("Hello, World!\n");
+    return 0;
+}
+```
+
+A po wpisaniu `gcc -S hello.c` dostaniemy takie coś:
+
+```asm
+	.file	"hello.c"
+	.text
+	.section	.rodata
+.LC0:
+	.string	"Hello, World!"
+	.text
+	.globl	main
+	.type	main, @function
+main:
+.LFB0:
+	.cfi_startproc
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	leaq	.LC0(%rip), %rax
+	movq	%rax, %rdi
+	call	puts@PLT
+	movl	$0, %eax
+	popq	%rbp
+	.cfi_def_cfa 7, 8
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	main, .-main
+	.ident	"GCC: (Debian 12.3.0-5) 12.3.0"
+	.section	.note.GNU-stack,"",@progbits
+```
+
+Osobiście zalecam też dodanie flagi `-masm=intel`, żeby dostać syntax Intela ;)
 
 ## Materiały do obczajenia
 
 Powodzenia wariacie :3
 
-- https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
-- https://www.nasm.us/docs.php
-- https://helion.pl/ksiazki/programowanie-w-asemblerze-x64-od-nowicjusza-do-znawcy-avx-jo-van-hoey,proase.htm
-- https://www.youtube.com/watch?v=jPDiaZS-2ok
-- https://www.youtube.com/watch?v=VQAKkuLL31g&list=PLetF-YjXm-sCH6FrTz4AQhfH6INDQvQSn
+(kolejność przypadkowa)
+
+- [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
+- [Dokumentacja NASM](https://www.nasm.us/docs.php)
+- [(Książka) Programowanie w asemblerze x64. Od nowicjusza do znawcy AVX](https://helion.pl/ksiazki/programowanie-w-asemblerze-x64-od-nowicjusza-do-znawcy-avx-jo-van-hoey,proase.htm#format/d)
+- [you can become a GIGACHAD assembly programmer in 10 minutes (try it RIGHT NOW)](https://www.youtube.com/watch?v=6S5KRJv-7RU)
+- [everything is open source if you can reverse engineer (try it RIGHT NOW!)](https://www.youtube.com/watch?v=gh2RXE9BIN8)
+- [You Can Learn Assembly in 10 Minutes (it’s easy)](https://www.youtube.com/watch?v=jPDiaZS-2ok)
+- [x86_64 Linux Assembly](https://www.youtube.com/playlist?list=PLetF-YjXm-sCH6FrTz4AQhfH6INDQvQSn)
+- [x64 Cheat Sheet](https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf)
+- [x86 Assembly Guide](https://flint.cs.yale.edu/cs421/papers/x86-asm/asm.html)
+- [Metody Realizacji Języków Programowania. Bardzo krótki kurs asemblera x86](https://www.mimuw.edu.pl/~ben/Zajecia/Mrj2014/Notatki/04x86.pdf)
+- [Calling Conventions](https://wiki.osdev.org/Calling_Conventions)
+- [(Książka, rozdział 6. Inżynieria wsteczna) Atak na sieć okiem hakera. Wykrywanie i eksploatacja luk w zabezpieczeniach sieci](https://helion.pl/ksiazki/atak-na-siec-okiem-hakera-wykrywanie-i-eksploatacja-luk-w-zabezpieczeniach-sieci-james-forshaw,ataksi.htm#format/d)
