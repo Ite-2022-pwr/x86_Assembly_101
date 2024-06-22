@@ -187,7 +187,7 @@ movl $10, %eax  ; Przenosi wartość 10 do rejestru %eax
 ```
 
 ### 5. **Rozmiary operacji**
-- **Intel**: rozmiar operacji jest implicit (domyślnie zależny od operandów) lub explicity za pomocą sufiksów instrukcji
+- **Intel**: rozmiar operacji jest implicit (domyślnie zależny od operandów) lub explicity za pomocą słów kluczowych (`qword`, `dword`, `word`, `byte`)
 - **AT&T**: rozmiar operacji jest explicity określony za pomocą sufiksów `b`, `w`, `l`, `q`
 
 #### Przykład:
@@ -365,7 +365,7 @@ Tradycyjnie, rozpoczynając przygodę z nowym językiem, należy napisać *Hello
 Jest on w kilku wersjach:
 
 *x86 AT&T*
-```s
+```asm
 # hello.s
 .data
   msg:
@@ -391,7 +391,7 @@ main:
 ```
 
 *x86_64 AT&T*
-```s
+```asm
 .data 
   msg: .asciz "Hello, World!\n"
   msgLen = (. - msg)
@@ -413,7 +413,7 @@ _start:
 ```
 
 *x86 ~~normalna składnia~~ Intel (NASM)*
-```s
+```asm
 global _start
 
 section .text
@@ -436,7 +436,7 @@ section .data
 ```
 
 *x86_64 Intel (NASM)*
-```s
+```asm
 BITS 64
 
 section .data
@@ -457,7 +457,9 @@ _start:
     syscall
 ```
 
-Po kolei. To jest jeszcze proste. To `BITS 64` na początku w niektórych *nasmowych* przykładach to wskazówka dla asemblera, że będziemy pisać w trybie 64-bitowym, to nieistotne (chyba nawet nie trzeba tego dawać, ja to robię z przyzwyczajenia xd). 
+Po kolei. To jest jeszcze proste. To `BITS 64` na początku w niektórych *nasmowych* przykładach to wskazówka dla asemblera, że będziemy pisać w trybie 64-bitowym, to nieistotne. Jest to potrzebne, jeśli assembler nie ma skąd wydedukować ilości bitów (czyli na przykład z flagą `-f bin`). 
+
+Warto też wspomnieć, że w GNU assembly komentarze rozpoczynają się od znaku `#`, a w NASM od `;`.
 
 W sekcji `.data` mamy zaalokowany nasz napis (`db` - *define bytes* (nasm), `.asciz` - napis ASCII z NULL na końcu (gnu)) jak również w niektórych przykładach jego długość. W nasm `$` to bieżący adres czy coś takiego, więc `$-msg` oznacza *bieżąca pozycja - pozycja `msg`*, czyli po prostu **długość `msg`** - najważniejsze do zapamiętania. W GNU zamiast dolara jest `.`.
 
@@ -504,6 +506,8 @@ I teraz uwaga. W rejestrze `eax` (`rax` w 64-bitowym) umieszczamy numer naszego 
 
 _Why? Because f**k you, that's why_
 
+(bo np. `rcx` jest sprzętowo zarezerwowany przez instrukcję `syscall`)
+
 Ta kolejność też jest do wygooglania (jeśli nie będę aż tak leniwą paruwą czyli jak mi się zachce to wstawie jakieś linki).
 
 W skrócie, w trybie 32-bitowym mamy:
@@ -528,10 +532,12 @@ Dlatego musimy program zakończyć **poprawnie**. Na nas spoczywa ta odpowiedzia
 
 Robimy to podobnie jak w przypadku `write`, czyli:
 
-- do `eax` dajemy nr syscalla - $1$ (do `rax` $60$)
-- do `ebx` (lub `rdi`) dajemy kod wyjścia z programu
+| 32-bitowy | 64-bitowy
+|:---:|:---:|
+| do `eax` dajemy nr syscalla - $1$ | do `rax` dajemy nr syscalla - $60$ | 
+| do `ebx` dajemy kod wyjścia z programu | do `rdi` dajemy kod wyjścia z programu |
 
-Jeśli jest gituwa, nie było jakiegoś błędu po drodze (w hello world nie ma gdzie xd) to dajemy $0$. Przyjęło się, że jak program kończy z kodem $0$ to znaczy, że jego wykonanie przeszło cacy i super. Jeśli jest wartość inna niż 0, to znaczy że był jakiś błąd.
+Jeśli jest gituwa, nie było jakiegoś błędu po drodze to dajemy $0$. Przyjęło się, że jak program kończy z kodem $0$ to znaczy, że jego wykonanie przeszło cacy i super. Jeśli jest wartość inna niż 0, to znaczy że był jakiś błąd.
 
 Jeśli pisałeś/pisałaś w C, to pewnie rzuciło Ci się w oczy kiedyś, że na końcu funkcji `main` jest często `return 0` - jest to właśnie z tego powodu, który opisałem powyżej.
 
@@ -567,7 +573,7 @@ Generalnie ważna rzecz: jak chcesz dowiedzieć się, jak działa dana instrukcj
 
 Mamy już kod, jesteśmy szczęśliwi - co teraz?
 
-Teraz kod asemblera musimy przekształcić do postaci binarnej, a następnie zlinkować, aby dostać plik wykonywalny.
+Teraz kod asemblera musimy przekształcić na plik *object*, a następnie zlinkować, aby dostać gotowy plik wykonywalny.
 
 ### GNU assembly
 
