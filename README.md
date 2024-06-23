@@ -14,7 +14,7 @@ Ten tutorial niech będzie bootcampem, który pozwoli Ci - mam nadzieję - zdać
 
 Nie zamierzam wchodzić w zbytnie szczegóły, a bardziej oswoić Cię z językiem asemblera i omówić podstawy.
 
-Postaram się też podać [przydatne źródła informacji](#materiały-do-obczajenia) z Internetu, z których sam korzystam oraz podrzucić kilka wskazówek, ale przygotuj się, że dużą część pracy musisz wykonać samodzielnie. Google będzie Twoim przyjacielem.
+Postaram się też podać [przydatne źródła informacji](#materiały-do-obczajenia) z Internetu, z których sam korzystam oraz podrzucić kilka wskazówek, ale przygotuj się, że dużą część pracy musisz wykonać samodzielnie. Google będzie Twoim przyjacielem. Chat GPT oczywiście też, ale pamiętaj, że nie jest nieomylny.
 
 Mam nadzieję, że poniższa lektura jakkolwiek ułatwi Ci otrzymanie zaliczenia.
 
@@ -43,7 +43,7 @@ Powodzenia <3
   - [Zestaw instrukcji (ISA - Instruction Set Architecture)](#zestaw-instrukcji-isa---instruction-set-architecture)
   - [Rejestry](#rejestry)
     - [Rejestry ogólnego przeznaczenia](#rejestry-ogólnego-przeznaczenia)
-    - [Rejestr flag (RFLAGS)](#rejestr-flag-rflags)
+    - [Rejestr flag (RFLAGS i EFLAGS)](#rejestr-flag-rflags-i-eflags)
   - [Stos](#stos)
     - [`push`](#push)
     - [`pop`](#pop)
@@ -56,16 +56,29 @@ Powodzenia <3
     - [6. **Adresowanie indeksowe (indexed addressing)**](#6-adresowanie-indeksowe-indexed-addressing)
     - [7. **Adresowanie bazowe z indeksem i przesunięciem (base-indexed with displacement addressing)**](#7-adresowanie-bazowe-z-indeksem-i-przesunięciem-base-indexed-with-displacement-addressing)
     - [8. **Adresowanie względne (relative addressing)**](#8-adresowanie-względne-relative-addressing)
+  - [ABI - binarny interfejs aplikacji](#abi---binarny-interfejs-aplikacji)
   - [Jak właściwie wygląda program?](#jak-właściwie-wygląda-program)
+  - [Kompilacja i konsolidacja](#kompilacja-i-konsolidacja)
   - [Pierwszy program](#pierwszy-program)
   - [Jak to uruchomić?](#jak-to-uruchomić)
     - [GNU assembly](#gnu-assembly)
     - [NASM](#nasm)
     - [makefile - przydatne](#makefile---przydatne)
     - [przedsmak inżynierii wstecznej (*reverse engineering*) - `objdump`](#przedsmak-inżynierii-wstecznej-reverse-engineering---objdump)
-  - [Robienie wyrażeń warunkowych i pętli](#robienie-wyrażeń-warunkowych-i-pętli)
-  - [Pisanie i wywoływanie funkcji](#pisanie-i-wywoływanie-funkcji)
+  - [Skoki](#skoki)
+    - [Skok bezwarunkowy](#skok-bezwarunkowy)
+    - [Skoki warunkowe](#skoki-warunkowe)
+    - [Instrukcja `loop`](#instrukcja-loop)
+  - [Wyrażenia warunkowe i pętle](#wyrażenia-warunkowe-i-pętle)
+  - [Konwencje wywołania funkcji](#konwencje-wywołania-funkcji)
+    - [Konwencje wywoływania funkcji w System V ABI dla x86](#konwencje-wywoływania-funkcji-w-system-v-abi-dla-x86)
+      - [x86 (32-bit)](#x86-32-bit)
+    - [Konwencje wywoływania funkcji w System V ABI dla x86-64](#konwencje-wywoływania-funkcji-w-system-v-abi-dla-x86-64)
+      - [x86-64 (64-bit)](#x86-64-64-bit)
+    - [Przykład (x86-64)](#przykład-x86-64)
+    - [Przykład (x86)](#przykład-x86)
   - [Ramka stosu](#ramka-stosu)
+  - [Pisanie i wywoływanie funkcji](#pisanie-i-wywoływanie-funkcji)
   - [Debugger (GDB)](#debugger-gdb)
   - [Łączenie C z asemblerem](#łączenie-c-z-asemblerem)
   - [Operacje zmiennoprzecinkowe na FPU](#operacje-zmiennoprzecinkowe-na-fpu)
@@ -345,9 +358,11 @@ Oto tabelka z rejestrami ogólnego przeznaczenia dla architektury x86-64:
 | R14     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
 | R15     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
 
-### Rejestr flag (RFLAGS)
+### Rejestr flag (RFLAGS i EFLAGS)
 
 Rejestr RFLAGS w architekturze x86-64 to 64-bitowy rejestr, który przechowuje różne flagi statusowe procesora. Te flagi informują o wyniku operacji arytmetycznych i logicznych, kontrolują przerwania oraz wpływają na działanie instrukcji warunkowych. RFLAGS jest używany do monitorowania i kontrolowania stanu procesora.
+
+Podobnie jak w przypadku innych rejestrów, prefiks *R* jest używany w odniesieniu do trybu 64-bitowego, a *E* do trybu 32-bitowego
 
 | Bit  | Nazwa           | Opis                                                                                     |
 |------|-----------------|------------------------------------------------------------------------------------------|
@@ -519,9 +534,25 @@ Te sposoby adresowania pozwalają na różnorodne i elastyczne operacje na danyc
 
 Każda architektura procesora może używać różnych sposobów adresowania pamięci. Na przykład procesor x86 może używać trybu adresowania bezpośredniego, pośredniego, bazowego, z przesunięciem i wielu innych. Procesor ARM również posiada swoje specyficzne sposoby adresowania, które mogą się różnić od x86.
 
+## ABI - binarny interfejs aplikacji
+
+ABI, czyli **Application Binary Interface** (interfejs binarny aplikacji), to zestaw standardów i reguł określających sposób interakcji programów z systemem operacyjnym na poziomie binarnym. ABI definiuje:
+- Format plików wykonywalnych i obiektowych.
+- Konwencje wywoływania funkcji (jak argumenty są przekazywane, jak funkcje zwracają wartości).
+- Zarządzanie pamięcią (stos, sterta).
+- Układ i użycie rejestrów procesora.
+
+ABI pozwala na współdziałanie skompilowanych programów i bibliotek różnych dostawców oraz zapewnia zgodność binarną.
+
+**System V ABI** to standard ABI dla systemów operacyjnych UNIX, takich jak Linux i Solaris. Jest to najbardziej rozpowszechniony ABI na systemach Linux/x86-64. Zapewnia jednolite zasady, które umożliwiają współpracę aplikacji i bibliotek na poziomie binarnym w różnych systemach UNIX-owych.
+
 ## Jak właściwie wygląda program?
 
 ![Memory layout of C programs](https://media.geeksforgeeks.org/wp-content/uploads/memoryLayoutC.jpg)
+
+## Kompilacja i konsolidacja
+
+![C compilation process](https://daniao.ws/notes/pba/images/compilation-process.png)
 
 ## Pierwszy program
 
@@ -915,9 +946,126 @@ $ alias objdump
 objdump='objdump -d -Mintel --disassembler-color=color --visualize-jumps=extended-color'
 ```
 
-## Robienie wyrażeń warunkowych i pętli
+## Skoki
 
-## Pisanie i wywoływanie funkcji
+### Skok bezwarunkowy
+
+### Skoki warunkowe
+
+### Instrukcja `loop`
+
+## Wyrażenia warunkowe i pętle
+
+## Konwencje wywołania funkcji
+
+Konwencje wywołania funkcji (calling conventions) to zestaw reguł określających sposób, w jaki funkcje w programowaniu przekazują argumenty, jak zwracają wartości oraz jak zarządzają stosami i rejestrami. Te reguły ustalają, które rejestry są używane do przekazywania argumentów, gdzie umieszczane są dodatkowe argumenty (np. na stosie), jak wartości są zwracane (w określonych rejestrach), oraz które rejestry muszą być zachowane (calle-saved) lub mogą być nadpisane (caller-saved). Konwencje wywołania są kluczowe dla zapewnienia kompatybilności między różnymi funkcjami i modułami, szczególnie gdy są kompilowane oddzielnie lub pochodzą od różnych dostawców. Przykładem takich konwencji jest System V ABI, używany w systemach UNIX-owych, w tym w systemach Linux na architekturach x86 i x86-64.
+
+### Konwencje wywoływania funkcji w System V ABI dla x86
+
+#### x86 (32-bit)
+
+1. **Przekazywanie argumentów**:
+   - Argumenty są przekazywane na stosie w kolejności od prawej do lewej.
+   - Pierwszy argument jest umieszczany na górze stosu.
+
+2. **Zwracanie wartości**:
+   - Wartości całkowite i wskaźniki są zwracane w rejestrze EAX.
+   - Wartości zmiennoprzecinkowe są zwracane w rejestrze ST0 (rejestr FPU).
+
+3. **Zarządzanie stosami**:
+   - Wskaźnik stosu (ESP) jest używany do zarządzania stosami.
+   - Wywołujący (caller) jest odpowiedzialny za oczyszczenie stosu po wywołaniu funkcji (np. za pomocą instrukcji `add esp, X`, gdzie X to liczba bajtów używanych przez argumenty).
+
+4. **Rejestry callee-saved** (muszą być zachowane przez wywoływaną funkcję):
+   - EBX, ESI, EDI, EBP
+
+5. **Rejestry caller-saved** (mogą być nadpisane przez wywoływaną funkcję):
+   - EAX, ECX, EDX
+
+### Konwencje wywoływania funkcji w System V ABI dla x86-64
+
+#### x86-64 (64-bit)
+
+1. **Przekazywanie argumentów**:
+   - Pierwsze sześć argumentów całkowitych lub wskaźnikowych są przekazywane w rejestrach: RDI, RSI, RDX, RCX, R8, R9.
+   - Dodatkowe argumenty są przekazywane na stosie.
+   - Argumenty zmiennoprzecinkowe są przekazywane w rejestrach XMM0 - XMM7.
+
+2. **Zwracanie wartości**:
+   - Wartości całkowite i wskaźniki są zwracane w rejestrach RAX i RDX (dla większych wartości).
+   - Wartości zmiennoprzecinkowe są zwracane w rejestrze XMM0.
+
+3. **Zarządzanie stosami**:
+   - Stos musi być 16-bajtowo wyrównany przed wywołaniem funkcji (zwykle wyrównywany przez wywołującego).
+   - Wskaźnik stosu (RSP) jest używany do zarządzania stosami.
+
+4. **Rejestry callee-saved** (muszą być zachowane przez wywoływaną funkcję):
+   - RBX, RBP, R12, R13, R14, R15
+
+5. **Rejestry caller-saved** (mogą być nadpisane przez wywoływaną funkcję):
+   - RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11
+
+### Przykład (x86-64)
+
+Wywołanie funkcji `int sum(int a, int b, int c)`
+
+```asm
+.section .text
+.globl _start
+
+_start:
+    movl $1, %edi        ; pierwszy argument a
+    movl $2, %esi        ; drugi argument b
+    movl $3, %edx        ; trzeci argument c
+    call sum
+
+    ; Kod kończący program (syscall do exit)
+    movl $60, %eax       ; syscall number for exit
+    xorl %edi, %edi      ; status 0
+    syscall
+
+sum:
+    pushq %rbp           ; zachowaj rbp
+    movq %rsp, %rbp      ; ustaw rbp na aktualną wartość rsp
+    movl %edi, %eax      ; załaduj argument a do eax
+    addl %esi, %eax      ; dodaj argument b
+    addl %edx, %eax      ; dodaj argument c
+    popq %rbp            ; przywróć rbp
+    ret                  ; zwróć wynik w eax
+
+```
+
+### Przykład (x86)
+
+Wywołanie funkcji `int sum(int a, int b, int c)`
+
+```asm
+.section .text
+.globl _start
+
+_start:
+    pushl $3             ; trzeci argument c
+    pushl $2             ; drugi argument b
+    pushl $1             ; pierwszy argument a
+    call sum
+    addl $12, %esp       ; wyczyść stos (3 argumenty * 4 bajty)
+
+    ; Kod kończący program (syscall do exit)
+    movl $1, %eax        ; syscall number for exit (Linux)
+    xorl %ebx, %ebx      ; status 0
+    int $0x80
+
+sum:
+    pushl %ebp           ; zachowaj ebp
+    movl %esp, %ebp      ; ustaw ebp na aktualną wartość esp
+    movl 8(%ebp), %eax   ; załaduj argument a do eax
+    addl 12(%ebp), %eax  ; dodaj argument b
+    addl 16(%ebp), %eax  ; dodaj argument c
+    popl %ebp            ; przywróć ebp
+    ret                  ; zwróć wynik w eax
+```
+
+Te przykłady ilustrują, jak różnią się konwencje wywoływania funkcji pomiędzy architekturami x86 i x86-64 zgodnie z System V ABI.
 
 ## Ramka stosu
 
@@ -1025,6 +1173,8 @@ Ten kod w asemblerze pokazuje, jak tworzone i zarządzane są ramki stosu podcza
 
 Ramki stosu są tworzone i usuwane przy każdym wywołaniu funkcji, zarządzając pamięcią i kontrolą przepływu programu.
 
+## Pisanie i wywoływanie funkcji
+
 ## Debugger (GDB)
 
 ## Łączenie C z asemblerem
@@ -1039,7 +1189,7 @@ Ramki stosu są tworzone i usuwane przy każdym wywołaniu funkcji, zarządzają
 
 Myślę, że najlepiej to będzie zrozumieć analizując jakieś programy - patrząc się na kod i uruchamiając pod debuggerem.
 
-Dlatego wrzucę kilka programów, które miałem okazję napisać. 
+Dlatego wrzucę kilka programów, które miałem okazję napisać. Spora część z jest napisana w NASM, więc zalecam samodzielne przepisanie ich na GNU assembly, jeśli Twój prowadzący tego wymaga.
 
 Różne programy znajdują się też w innych repozytoriach z [OiAK](https://github.com/Ite-2022-pwr/OiAK).
 
