@@ -8,13 +8,15 @@ Specjalne podziękowania za pomoc dla [Marcina](https://github.com/TheNNX), jest
 
 Asembler wiele osób przeraża (tbh nie wiem czemu), jednak trzeba go trochę poznać, ponieważ na kierunku Informatyka techniczna na PWr (i na innych informatycznych kierunkach na innych uczelniach) ma się z nim styczność na zajęciach.
 
-Na ITE trafisz na przedmiot *Organizacja i architektura komputerów* lub *Wprowadzenie do wysokowydajnych komputerów* (dawniej *Architektura komputerów 2*), na którym musisz pisać w asemblerze x86.
+Na ITE trafisz na przedmiot [*Organizacja i architektura komputerów*](https://github.com/Ite-2022-pwr/OiAK) lub *Wprowadzenie do wysokowydajnych komputerów* (dawniej *Architektura komputerów 2*), na którym musisz pisać w asemblerze x86.
 
 Ten tutorial niech będzie bootcampem, który pozwoli Ci - mam nadzieję - zdać laboratoria z tego przedmiotu. Jeśli chodzi o wykład to polecam książkę prof. Biernata albo prezentację z wykładów i modlitwę.
 
 Nie zamierzam wchodzić w zbytnie szczegóły, a bardziej oswoić Cię z językiem asemblera i omówić podstawy.
 
 Postaram się też podać [przydatne źródła informacji](#materiały-do-obczajenia) z Internetu, z których sam korzystam oraz podrzucić kilka wskazówek, ale przygotuj się, że dużą część pracy musisz wykonać samodzielnie. Google będzie Twoim przyjacielem. Chat GPT oczywiście też, ale pamiętaj, że nie jest nieomylny.
+
+Ten miniporadnik jest dość chaotyczny, więc przygotowałem [spis treści](#spis-treści).
 
 Mam nadzieję, że poniższa lektura jakkolwiek ułatwi Ci otrzymanie zaliczenia.
 
@@ -65,6 +67,7 @@ Powodzenia <3
     - [NASM](#nasm)
     - [makefile - przydatne](#makefile---przydatne)
     - [przedsmak inżynierii wstecznej (*reverse engineering*) - `objdump`](#przedsmak-inżynierii-wstecznej-reverse-engineering---objdump)
+  - [Wywołania systemowe](#wywołania-systemowe)
   - [Skoki](#skoki)
     - [Skok bezwarunkowy](#skok-bezwarunkowy)
     - [Skoki warunkowe](#skoki-warunkowe)
@@ -108,7 +111,7 @@ Kilka przykładowych asemblerów na x86:
 
 1. **NASM (Netwide Assembler)**:
    - Bardzo popularny asembler dla x86.
-   - Obsługuje zarówno składnię Intel, jak i AT&T.
+   - Obsługuje składnię Intel.
    - Może generować różne formaty plików obiektowych, takie jak ELF, COFF, i binarne.
    - Komenda do uruchomienia: `nasm`.
 
@@ -136,7 +139,7 @@ Kilka przykładowych asemblerów na x86:
    - Może generować różne formaty plików obiektowych.
    - Komenda do uruchomienia: `yasm`.
 
-Ja osobiście korzystam z NASM, jednak na studiach bardziej preferowany jest GAS. Warto również wspomnieć, że pojawiające się w dalszej części tego samouczka będą pisane pod **Linuksa** i nie będą działać na Windowsie, dlatego jeśli czytelnik nie korzysta z Linuksa to ~~niech zacznie~~ warto, żeby zaopatrzył się w jakąś [maszynę wirtualną](https://www.youtube.com/watch?v=nvdnQX9UkMY) bądź korzystał z [WSL-a](https://www.youtube.com/watch?v=4emmQuY25aY).
+Ja osobiście korzystam z NASM, jednak na studiach bardziej preferowany jest GAS. Warto również wspomnieć, że pojawiające się w dalszej części tego samouczka będą pisane pod **Linuksa** i nie będą działać na Windowsie, dlatego jeśli nie korzystasz z Linuksa to ~~niech zacznij~~ warto, żebyś zaopatrzył(a) się w jakąś [maszynę wirtualną](https://www.youtube.com/watch?v=nvdnQX9UkMY) bądź korzystał(a) z [WSL-a](https://www.youtube.com/watch?v=4emmQuY25aY).
 
 ## Składnie asemblera
 
@@ -921,7 +924,7 @@ Disassembly of section .text:
                                                     
 ```
 
-Jeśli chcemy uzyskać kod w ~~normalnej~~ notacji Intela, należy dodać flagę `-Mintel`:
+Jeśli chcemy uzyskać kod w ~~normalnej~~ składni Intela, należy dodać flagę `-Mintel`:
 
 ```
 Disassembly of section .text:
@@ -945,6 +948,8 @@ Tak wygląda mój alias na komendę `objdump`:
 $ alias objdump
 objdump='objdump -d -Mintel --disassembler-color=color --visualize-jumps=extended-color'
 ```
+
+## Wywołania systemowe
 
 ## Skoki
 
