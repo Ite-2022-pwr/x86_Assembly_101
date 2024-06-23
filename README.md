@@ -42,6 +42,11 @@ Powodzenia <3
       - [Przykład:](#przykład-5)
   - [Zestaw instrukcji (ISA - Instruction Set Architecture)](#zestaw-instrukcji-isa---instruction-set-architecture)
   - [Rejestry](#rejestry)
+    - [Rejestry ogólnego przeznaczenia](#rejestry-ogólnego-przeznaczenia)
+    - [Rejestr flag (RFLAGS)](#rejestr-flag-rflags)
+  - [Stos](#stos)
+    - [`push`](#push)
+    - [`pop`](#pop)
   - [Tryby adresowania](#tryby-adresowania)
     - [1. **Adresowanie natychmiastowe (immediate addressing)**](#1-adresowanie-natychmiastowe-immediate-addressing)
     - [2. **Adresowanie rejestrowe (register addressing)**](#2-adresowanie-rejestrowe-register-addressing)
@@ -69,6 +74,7 @@ Powodzenia <3
   - [**Przykładowe programy**](#przykładowe-programy)
     - [NWD](#nwd)
     - [Basic Input/Output](#basic-inputoutput)
+    - [Gra *zgadnij liczbę*](#gra-zgadnij-liczbę)
   - [**Szybka nauka asemblera - cheatcode**](#szybka-nauka-asemblera---cheatcode)
   - [Materiały do obczajenia](#materiały-do-obczajenia)
 
@@ -217,7 +223,201 @@ Każdy procesor ma swój unikalny zestaw instrukcji, które określają, jakie o
 
 Procesory mają różne układy rejestrów, które są małymi, szybkimi pamięciami wewnętrznymi używanymi do przechowywania danych i adresów. Na przykład procesor Intel x86 ma rejestry takie jak `eax`, `ebx`, `ecx`, `edx`, podczas gdy procesor ARM ma rejestry takie jak `r0`, `r1`, `r2`.
 
+### Rejestry ogólnego przeznaczenia
 
+Ilość rejestrów ogólnego przeznaczenia zależy od trybu procesora. W trybie szesnastobitowym dostępne głowne rejestry ogólnego przeznaczenia to *AX (Accumulator), BX (Base), CX (Counter), DX*. Większość z nazw rejestrów ma znaczenie jedynie symboliczne, wynikające z zawiłości histori, choć należy pamiętać o pewnych specyficznych ograniczeniach z tychże wynikających. Mnożenie/dzielenie np. zapisuje swój wynik jedynie w rejestrach AX i DX (podobne ograiczenie obowiązuje różwnież w stosunku do arytmetyki o innej ilości bitów, mnożenie 32 bit zapisuje wynik tylko do EAX i EDX, mnożenie 64 bitowe tylko do RAX i RDX itd.).
+
+Jak można zauważyć *E* jest prefiksem oznaczającym, że mamy na myśli rejestr 32-, a *R*, 64-bitowy. Zmiana "końcówki" *X* na *L* albo *H* w celu uzyskania rejestru 8-bitowego jest unikalna dla rejestrów AX, BX, CX, DX. 
+
+Oprócz tych czterech rejestrów, istnieją jeszcze rejestry *DI (Destination Index)* oraz *SI (Source Index)*. Mają one swoje 32- i 64- bitowe odpowiedniki EDI, ESI oraz RDI, RSI.
+
+Poniżej znajduje się tabela ilustrująca hierarchiczną strukturę rejestru w architekturze x86-64.
+
+<table class="tg">
+<thead>
+  <td class="tg-invisible" colspan="4">a</td>
+    <td class="tg-baqh" colspan="8">Numer ostatniego bitu</td>
+</thead>
+<tbody>
+  <tr>
+    <th class="tg-invisible" colspan="4">a</th>
+    <th class="tg-baqh">63</th>
+    <th class="tg-baqh">55</th>
+    <th class="tg-baqh">47</th>
+    <th class="tg-baqh">39</th>
+    <th class="tg-baqh">31</th>
+    <th class="tg-baqh">23</th>
+    <th class="tg-baqh">15</th>
+    <th class="tg-baqh">7</th>
+  </tr>
+  <tr>
+    <td class="tg-dupa" colspan="4">64 bity</td>
+    <td class="tg-baqh" colspan="8">RxX</td>
+  </tr>
+  <tr>
+    <td class="tg-dupa" colspan="4">32 bity</td>
+    <td class="tg-fzdr" colspan="4"></td>
+    <td class="tg-baqh" colspan="4">ExX</td>
+  </tr>
+  <tr>
+    <td class="tg-dupa" colspan="4">16 bitów</td>
+    <td class="tg-fzdr" colspan="6"></td>
+    <td class="tg-baqh" colspan="2">xX</td>
+  </tr>
+  <tr>
+   <td class="tg-dupa" colspan="4">8 bitów</td>
+    <td class="tg-fzdr" colspan="6"></td>
+    <td class="tg-baqh">xH</td>
+    <td class="tg-baqh">xL</td>
+  </tr>
+</tbody>
+</table>
+Pod małe x należy podstawić tutaj jedną z 4 liter głównych rejestrów ogólnego przeznaczenia (A, B, C, D).
+<br><br>
+Jak widać jeśli odwołamy się do rejestru AH, to odwołamy się również do bitów 8-15 rejestru RxX. Umożliwia to używanie operacji o niższej liczbie bitów, niż ma tryb, w którym obecnie działa procesor. 
+<br><br>
+Struktura rejestrów DI i SI wygląda natomiast następująco:
+<table class="tg">
+<thead>
+  <th class="tg-invisible" colspan="4"> </th>
+    <td class="tg-baqh" colspan="8">Numer ostatniego bitu</td>
+</thead>
+<tbody>
+  <tr>
+    <th class="tg-invisible" colspan="4"> </th>
+    <th class="tg-baqh">63</th>
+    <th class="tg-baqh">55</th>
+    <th class="tg-baqh">47</th>
+    <th class="tg-baqh">39</th>
+    <th class="tg-baqh">31</th>
+    <th class="tg-baqh">23</th>
+    <th class="tg-baqh">15</th>
+    <th class="tg-baqh">7</th>
+  </tr>
+  <tr>
+    <td class="tg-dupa" colspan="4">64 bity</td>
+    <td class="tg-baqh" colspan="8">RxI</td>
+  </tr>
+  <tr>
+    <td class="tg-dupa" colspan="4">32 bity</td>
+    <td class="tg-fzdr" colspan="4"></td>
+    <td class="tg-baqh" colspan="4">ExI</td>
+  </tr>
+  <tr>
+    <td class="tg-dupa" colspan="4">16 bitów</td>
+    <td class="tg-fzdr" colspan="6"></td>
+    <td class="tg-baqh" colspan="2">xI</td>
+  </tr>
+
+</tbody>
+</table>
+<br><br>
+Tryb 64 bitowy dodaje również wiele nowych rejestrów ogólnego przeznaczenia. Są to rejestry od R8 do R15. Można odwołać się do ich niższych 16- i 32-bitowych częsci sufiksując nazwę rejestru odpowiednio w lub d.
+<br><br>
+
+Oprócz wyżej wymienionych rejestrów, istnieją jeszcze takie, z którymi trzeba postępować ostrożnie:
+
+- [*Stack Pointer*](#stos) (SP)
+- *Base Pointer* (BP)
+
+Rejestr SP przechowuje adres wierzchołka [stosu](#stos), zarządzając miejscem przechowywania ostatnich danych wprowadzonych na stos, co jest kluczowe dla zarządzania wywołaniami funkcji i danymi tymczasowymi.
+
+Rejestr BP przechowuje adres podstawowy dla aktualnej [ramki stosu](#ramka-stosu), co ułatwia dostęp do parametrów funkcji i zmiennych lokalnych, będąc szczególnie użytecznym dla kompilatorów w organizacji pamięci funkcji.
+
+Oto tabelka z rejestrami ogólnego przeznaczenia dla architektury x86-64:
+
+| Rejestr | Opis                 | Uwagi                           |
+|---------|----------------------|---------------------------------|
+| RAX     | Accumulator          | Wynik operacji arytmetycznych   |
+| RBX     | Base                 | Wskaźnik bazowy danych          |
+| RCX     | Counter              | Licznik dla pętli i przesunięć  |
+| RDX     | Data                 | Dane dla operacji we/wy         |
+| RSI     | Source Index         | Źródło danych dla operacji str  |
+| RDI     | Destination Index    | Cel danych dla operacji str     |
+| RBP     | Base Pointer         | Wskaźnik bazowy stosu           |
+| RSP     | Stack Pointer        | Wskaźnik wierzchołka stosu      |
+| R8      |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R9      |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R10     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R11     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R12     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R13     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R14     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+| R15     |                      | Dodatkowy rejestr ogólnego przeznaczenia |
+
+### Rejestr flag (RFLAGS)
+
+Rejestr RFLAGS w architekturze x86-64 to 64-bitowy rejestr, który przechowuje różne flagi statusowe procesora. Te flagi informują o wyniku operacji arytmetycznych i logicznych, kontrolują przerwania oraz wpływają na działanie instrukcji warunkowych. RFLAGS jest używany do monitorowania i kontrolowania stanu procesora.
+
+| Bit  | Nazwa           | Opis                                                                                     |
+|------|-----------------|------------------------------------------------------------------------------------------|
+| 0    | CF (Carry Flag) | Flaga przeniesienia, ustawiana, gdy operacja arytmetyczna wygeneruje przeniesienie.      |
+| 1    | 1               | Zarezerwowane, zawsze ustawione na 1.                                                    |
+| 2    | PF (Parity Flag)| Flaga parzystości, ustawiana, gdy liczba bitów ustawionych na 1 w wyniku operacji jest parzysta. |
+| 3    | 0               | Zarezerwowane, zawsze ustawione na 0.                                                    |
+| 4    | AF (Adjust Flag)| Flaga pomocnicza, ustawiana, gdy nastąpi przeniesienie z/do niskiego półbajtu.           |
+| 5    | 0               | Zarezerwowane, zawsze ustawione na 0.                                                    |
+| 6    | ZF (Zero Flag)  | Flaga zera, ustawiana, gdy wynik operacji jest równy zero.                               |
+| 7    | SF (Sign Flag)  | Flaga znaku, kopiowana z najstarszego bitu wyniku (MSB).                                 |
+| 8    | TF (Trap Flag)  | Flaga pułapki, umożliwia działanie trybu krokowego (jednopoziomowe wykonanie).           |
+| 9    | IF (Interrupt Flag) | Flaga przerwania, pozwala na przerwania maskowalne, gdy jest ustawiona.               |
+| 10   | DF (Direction Flag) | Flaga kierunku, określa kierunek przetwarzania blokowego (0 = wzrost adresów, 1 = spadek adresów). |
+| 11   | OF (Overflow Flag) | Flaga przepełnienia, ustawiana, gdy operacja arytmetyczna wygeneruje przepełnienie.    |
+| 12-13| IOPL (I/O Privilege Level) | Poziom uprzywilejowania dostępu do operacji wejścia/wyjścia.                  |
+| 14   | NT (Nested Task) | Flaga zagnieżdżonego zadania, używana do wsparcia mechanizmu zadań zagnieżdżonych.      |
+| 15   | 0               | Zarezerwowane, zawsze ustawione na 0.                                                    |
+| 16   | RF (Resume Flag)| Flaga wznowienia, używana do kontroli debugowania.                                       |
+| 17   | VM (Virtual-8086 Mode) | Flaga trybu wirtualnego 8086, włącza tryb wirtualny 8086.                         |
+| 18   | AC (Alignment Check) | Flaga sprawdzania wyrównania, włącza sprawdzanie wyrównania adresów pamięci.        |
+| 19   | VIF (Virtual Interrupt Flag) | Wirtualna flaga przerwania, używana w wirtualizacji.                       |
+| 20   | VIP (Virtual Interrupt Pending) | Wirtualna flaga oczekiwania na przerwanie, używana w wirtualizacji.      |
+| 21   | ID (ID Flag)    | Flaga identyfikacji, umożliwia programowi sprawdzenie obsługi instrukcji CPUID.         |
+| 22-63| 0               | Zarezerwowane, zawsze ustawione na 0.                                                    |
+
+
+## Stos
+
+Z powodu ograniczonej ilości rejestrów, nie jest możliwe przechowywanie wszystkich zmiennych programu w nich właśnie. Z tego powodu do przechowywania zmiennych lokalnych funckji korzysta się ze stosu. Stos jest zaimplementowany sprzętowo jako wskaźnik stosu (rejestr SP). Podstawowymi instruckjami do wykonywania operacji na stosie są instrukcje `push` i `pop`.
+
+Stos jest również wykorzystywany przy wywoływaniu funkcji. To na stosie właśnie instrukcja `call` zapisuje adres powrotu. Według większości przyjętych konwencji, na stos umieszcza się również (choć niektóre) argumenty funkcji.
+
+Rozmiary operacji na stosie bywają problematyczne. W trybie 64-bitowym dostępne są kodowania dla rejestrów 64-bitowych, w przypadku push - 8- i 16-bitowych wartości stałych oraz stałej 32-bitowej rozszerzanej ze znakiem do wartości 64-bitowej. W trybie 64-bitowym operacje 64-bitowe "zastępują" te 32-bitowe - kodowanie 32-bitowych wariantów instrukcji zastąpione zostało 64-bitowymi, czasem rozszerzając ze znakiem, jeśli było to konieczne.
+
+### `push`
+Insturckja `push` dekrementuje (stos sprzętowy rośnie *w dół* pamięci) SP o rozmiar jej argumentu w bajtach. Do `[SP]` (pamięci o adresie wskazywanym przez tak zmieniony wskaźnik stosu) wpisywana jest wartość parametru. 
+
+Możliwymi typami paramtru dla tej instrukcji są rejestr, pamięć o adresie stałym, pamięć o adresie efektywnym lub wartość stała.
+
+Przykład użycia `push`:
+
+```asm
+; `mov rsp, X` nie jest instrukcją używaną często w programach trybu użytkownika
+; lecz na potrzeby prezentacji, będzie wykorzystywana w przykładach dotyczących stosu
+
+; wpisujemy 64 do rejestru rsp
+mov rsp, 64
+
+; ponieważ pracujemy w trybie 64-bitowym, 0x4315 to tak naprawdę 0x0000000000004315 - wartość jest rozszerzana do 64 bitów
+push 0x4315
+
+; 1. najpierw zmniejszany o 8 (liczba 64-bitowa ma 8 bajtów) rejestr rsp
+; zatem, rsp = 56
+; 2. do adresu wskazywanego przez rsp, wpisywana jest nasza liczba
+
+; po wykonaniu instrukcji rsp = 56, [56] = 0x0000000000004315
+```
+
+### `pop`
+Instruckja `pop` umieszcza w miejscu określonym przez jej argument `[SP]` inkrementuje (stos sprzętowy maleje *w górę*) SP o rozmiar jej argumentu w bajtach (należy tu zaznaczyć, że `pop` jest dużo bardziej restrykcyjne w kwestii dopuszczalnych rozmiarów parametrów niż `push`).
+
+```asm
+; inicjalizacja rejestru stosu
+mov rsp, 56 
+
+; wczytaj QWORD (Quadriple WORD, 8 bajtów) do pamięci o adresie zawartości 
+; rejestru RBP zwiększonej o 8
+pop QWORD [rbp+8]
+```
 
 ## Tryby adresowania
 
@@ -721,6 +921,110 @@ objdump='objdump -d -Mintel --disassembler-color=color --visualize-jumps=extende
 
 ## Ramka stosu
 
+**Ramka stosu (Stack Frame)** to struktura danych utworzona na stosie przez każdą funkcję podczas jej wywołania. Zawiera informacje niezbędne do zarządzania funkcją, w tym:
+
+1. **Adres powrotu:** Adres w kodzie, do którego program powinien wrócić po zakończeniu funkcji.
+2. **Argumenty funkcji:** Przekazywane do funkcji podczas jej wywołania.
+3. **Zmienne lokalne:** Zmienne, które są deklarowane wewnątrz funkcji i używane tylko w jej zakresie.
+4. **Rejestry:** Wartości rejestrów, które muszą być zachowane i przywrócone po zakończeniu funkcji.
+
+Ramka stosu jest kluczowa dla zarządzania wywołaniami funkcji i zapewnia poprawne działanie rekursji oraz zagnieżdżonych wywołań funkcji.
+
+Przykład:
+
+```asm
+.section .data
+output_fmt_a: .asciz "Funkcja A: x = %d\n"
+output_fmt_b: .asciz "Funkcja B: y = %d\n"
+
+.section .text
+.globl _start
+
+# Prototypy funkcji
+.type funkcjaA, @function
+.type funkcjaB, @function
+
+# Funkcja B
+funkcjaB:
+    pushl %ebp            # Zapisz stary base pointer
+    movl %esp, %ebp       # Ustaw nowy base pointer
+    subl $8, %esp         # Alokacja miejsca na zmienne lokalne
+
+    movl 8(%ebp), %eax    # Pobierz argument b (8) do %eax
+    addl $10, %eax        # y = b + 10
+    movl %eax, -4(%ebp)   # Zapisz y na stosie
+
+    # Wywołaj printf
+    pushl -4(%ebp)        # Push y
+    pushl $output_fmt_b   # Push format string
+    call printf
+    addl $8, %esp         # Wyczyść stos
+
+    leave                 # Przywróć %ebp i %esp
+    ret                   # Powrót
+
+# Funkcja A
+funkcjaA:
+    pushl %ebp            # Zapisz stary base pointer
+    movl %esp, %ebp       # Ustaw nowy base pointer
+    subl $8, %esp         # Alokacja miejsca na zmienne lokalne
+
+    movl 8(%ebp), %eax    # Pobierz argument a (3) do %eax
+    addl $5, %eax         # x = a + 5
+    movl %eax, -4(%ebp)   # Zapisz x na stosie
+
+    # Wywołaj printf
+    pushl -4(%ebp)        # Push x
+    pushl $output_fmt_a   # Push format string
+    call printf
+    addl $8, %esp         # Wyczyść stos
+
+    # Wywołaj funkcję B z argumentem x
+    pushl -4(%ebp)        # Push x jako argument
+    call funkcjaB
+    addl $4, %esp         # Wyczyść stos
+
+    leave                 # Przywróć %ebp i %esp
+    ret                   # Powrót
+
+# Główna funkcja
+_start:
+    pushl $3              # Push z
+    call funkcjaA         # Wywołaj funkcję A
+    addl $4, %esp         # Wyczyść stos
+
+    # Wyjście z programu
+    movl $1, %eax         # syscall: exit
+    xorl %ebx, %ebx       # status: 0
+    int $0x80             # wykonaj syscall
+```
+
+Struktura stosu podczas wykonania:
+
+1. **Wywołanie `_start`**:
+   - Ramka stosu dla `_start` zawiera argument dla `funkcjaA`.
+
+2. **Wywołanie `funkcjaA`**:
+   - Tworzy swoją ramkę stosu, zawiera argument `a` i zmienną lokalną `x`.
+   - Zapisuje stary base pointer (`ebp`) i ustawia nowy.
+
+3. **Wywołanie `funkcjaB`**:
+   - Tworzy swoją ramkę stosu, zawiera argument `b` i zmienną lokalną `y`.
+   - Zapisuje stary base pointer (`ebp`) i ustawia nowy.
+
+Przebieg wykonania:
+
+1. Program startuje od `_start`, deklaruje zmienną `z = 3`, wywołuje `funkcjaA(z)`.
+2. `funkcjaA` tworzy swoją ramkę stosu, zapisuje `a = 3`, oblicza `x = 8`, wywołuje `funkcjaB(x)`.
+3. `funkcjaB` tworzy swoją ramkę stosu, zapisuje `b = 8`, oblicza `y = 18`, drukuje wartość `y`.
+4. `funkcjaB` kończy wykonanie, jej ramka stosu jest usuwana, sterowanie wraca do `funkcjaA`.
+5. `funkcjaA` kończy wykonanie, jej ramka stosu jest usuwana, sterowanie wraca do `_start`.
+6. `_start` kończy wykonanie programu.
+
+Ten kod w asemblerze pokazuje, jak tworzone i zarządzane są ramki stosu podczas wywołań funkcji, z użyciem wskaźników `SP` i `BP` oraz stosu do przechowywania argumentów i zmiennych lokalnych.
+
+Ramki stosu są tworzone i usuwane przy każdym wywołaniu funkcji, zarządzając pamięcią i kontrolą przepływu programu.
+
 ## Debugger (GDB)
 
 ## Łączenie C z asemblerem
@@ -847,6 +1151,93 @@ _printName:
 	ret
 ```
 
+### Gra *zgadnij liczbę*
+
+```asm
+BITS 64
+
+extern rand, srand, time, printf, scanf
+
+section .text
+
+    global _start
+
+_start:
+
+    mov rdi, 0x0
+    call time
+    add rsp, 8
+
+    mov rdi, rax
+    call srand
+    add rsp, 8
+
+    call rand
+
+    xor rdx, rdx
+    mov rcx, 100
+    div rcx
+    add rdx, 1
+    mov [answer], edx
+
+    .while_start:
+        mov rdi, formatHello
+        xor rax, rax
+        call printf
+
+        mov rdi, formatScanf
+        mov rsi, guess
+        xor rax, rax
+        call scanf
+
+        mov rax, [guess]
+        cmp eax, [answer]
+        je .while_end
+        jl .if_less
+        jg .if_greater
+
+        .if_less:
+            mov rdi, tooLowMsg
+            xor rax, rax
+            call printf
+            jmp .while_start
+
+        .if_greater:
+            mov rdi, tooHighMsg
+            xor rax, rax
+            call printf
+            jmp .while_start
+
+    .while_end:
+        xor rax, rax
+        mov rdi, formatWinMsg
+        mov rsi, [answer]
+        call printf
+
+    mov rdi, 0
+
+    mov rax, 0x3c
+    syscall
+
+
+section .data
+
+    formatHello db "Try to guess a number between 1 and 100", 10, "> ", 0
+
+    formatScanf db "%d"
+
+    tooLowMsg db "Too low!", 10, 0
+    tooHighMsg db "Too high!", 10, 0
+
+    formatWinMsg db "Congrats! The number was: %d", 10, 0
+
+section .bss
+
+    answer resd 1
+    guess resd 1
+
+```
+
 ## **Szybka nauka asemblera - cheatcode**
 
 `gcc` nie musi wypluwać gotowego pliku binarnego. Jeśli użyjemy flagi `-S` to wypluje nam przetłumaczony kod z C na asemblera. Co prawda będzie ona zawierał różne pierdoły, które nas niekoniecznie będą interesować podczas nauki (zwłaszcza na studia), a labele będą miały mało mówiące nazwy typu `.L69`, ale zawsze coś.
@@ -918,3 +1309,6 @@ Powodzenia wariacie :3
 - [Metody Realizacji Języków Programowania. Bardzo krótki kurs asemblera x86](https://www.mimuw.edu.pl/~ben/Zajecia/Mrj2014/Notatki/04x86.pdf)
 - [Calling Conventions](https://wiki.osdev.org/Calling_Conventions)
 - [(Książka, rozdział 6. Inżynieria wsteczna) Atak na sieć okiem hakera. Wykrywanie i eksploatacja luk w zabezpieczeniach sieci](https://helion.pl/ksiazki/atak-na-siec-okiem-hakera-wykrywanie-i-eksploatacja-luk-w-zabezpieczeniach-sieci-james-forshaw,ataksi.htm#format/d)
+- [CPU Registers x86-64](https://wiki.osdev.org/CPU_Registers_x86-64)
+- [x86 Assembly/X86 Architecture](https://en.wikibooks.org/wiki/X86_Assembly/X86_Architecture)
+- [x86 Registers](https://www.eecg.utoronto.ca/~amza/www.mindsec.com/files/x86regs.html)
