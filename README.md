@@ -102,8 +102,8 @@ Każdy typ procesora (np. Intel x86, ARM, MIPS) ma swój własny zestaw instrukc
 
 Na kierunku Informatyka techniczna na PWr (przynajmniej w momencie, w którym to piszę) spotkaliśmy się z dwoma różnymi asemblerami:
 
-- x86 na przedmiotach [*Organizacja i architektura komputerów*](https://github.com/Ite-2022-pwr/OiAK) oraz *Wprowadzenie do wysokowydajnych komputerów* ([czwarty semestr](https://github.com/Ite-2022-pwr/ITE-IS-Semestr-4))
-- Intel 8051 na przedmiocie *Podstawy technik mikroprocesorowych* (również [czwarty semestr](https://github.com/Ite-2022-pwr/ITE-IS-Semestr-4))
+- x86 na przedmiotach [*Organizacja i architektura komputerów*](https://github.com/Ite-2022-pwr/OiAK) oraz [*Wprowadzenie do wysokowydajnych komputerów*](https://github.com/Ite-2022-pwr/WdWK) ([czwarty semestr](https://github.com/Ite-2022-pwr/ITE-IS-Semestr-4))
+- Intel 8051 na przedmiocie [*Podstawy techniki mikroprocesorowej 1*](https://github.com/Ite-2022-pwr/PTM1) (również [czwarty semestr](https://github.com/Ite-2022-pwr/ITE-IS-Semestr-4))
 
 ## Jakie asemblery na x86
 
@@ -139,7 +139,7 @@ Kilka przykładowych asemblerów na x86:
    - Może generować różne formaty plików obiektowych.
    - Komenda do uruchomienia: `yasm`.
 
-Ja osobiście korzystam z NASM, jednak na studiach bardziej preferowany jest GAS. Warto również wspomnieć, że pojawiające się w dalszej części tego samouczka będą pisane pod **Linuksa** i nie będą działać na Windowsie, dlatego jeśli nie korzystasz z Linuksa to ~~niech zacznij~~ warto, żebyś zaopatrzył(a) się w jakąś [maszynę wirtualną](https://www.youtube.com/watch?v=nvdnQX9UkMY) bądź korzystał(a) z [WSL-a](https://www.youtube.com/watch?v=4emmQuY25aY).
+Ja osobiście korzystam z NASM, jednak na studiach bardziej preferowany jest GAS. Warto również wspomnieć, że pojawiające się w dalszej części tego samouczka będą pisane pod **Linuksa** i nie będą działać na Windowsie, dlatego jeśli nie korzystasz z Linuksa to ~~lepiej zacznij~~ warto, żebyś zaopatrzył(a) się w jakąś [maszynę wirtualną](https://www.youtube.com/watch?v=nvdnQX9UkMY) bądź korzystał(a) z [WSL-a](https://www.youtube.com/watch?v=4emmQuY25aY).
 
 ## Składnie asemblera
 
@@ -1081,7 +1081,7 @@ Te przykłady ilustrują, jak różnią się konwencje wywoływania funkcji pomi
 3. **Zmienne lokalne:** Zmienne, które są deklarowane wewnątrz funkcji i używane tylko w jej zakresie.
 4. **Rejestry:** Wartości rejestrów, które muszą być zachowane i przywrócone po zakończeniu funkcji.
 
-Ramka stosu jest kluczowa dla zarządzania wywołaniami funkcji i zapewnia poprawne działanie rekursji oraz zagnieżdżonych wywołań funkcji.
+Ramka stosu jest kluczowa dla zarządzania wywołaniami funkcji i zapewnia poprawne działanie rekurencji oraz zagnieżdżonych wywołań funkcji.
 
 Przykład:
 
