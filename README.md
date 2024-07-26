@@ -8,7 +8,7 @@ Specjalne podziękowania za pomoc dla [Marcina](https://github.com/TheNNX), jest
 
 Asembler wiele osób przeraża (tbh nie wiem czemu), jednak trzeba go trochę poznać, ponieważ na kierunku Informatyka techniczna na PWr (i na innych informatycznych kierunkach na innych uczelniach) ma się z nim styczność na zajęciach.
 
-Na ITE trafisz na przedmiot [*Organizacja i architektura komputerów*](https://github.com/Ite-2022-pwr/OiAK) lub *Wprowadzenie do wysokowydajnych komputerów* (dawniej *Architektura komputerów 2*), na którym musisz pisać w asemblerze x86.
+Na ITE trafisz na przedmiot [*Organizacja i architektura komputerów*](https://github.com/Ite-2022-pwr/OiAK) lub [*Wprowadzenie do wysokowydajnych komputerów*](https://github.com/Ite-2022-pwr/WdWK) (dawniej *Architektura komputerów 2*), na którym musisz pisać w asemblerze x86.
 
 Ten tutorial niech będzie bootcampem, który pozwoli Ci - mam nadzieję - zdać laboratoria z tego przedmiotu. Jeśli chodzi o wykład to polecam książkę prof. Biernata albo prezentację z wykładów i modlitwę.
 
@@ -61,18 +61,32 @@ Powodzenia <3
   - [ABI - binarny interfejs aplikacji](#abi---binarny-interfejs-aplikacji)
   - [Jak właściwie wygląda program?](#jak-właściwie-wygląda-program)
   - [Kompilacja i konsolidacja](#kompilacja-i-konsolidacja)
+    - [Kompilacja](#kompilacja)
+    - [Konsolidacja (Linking)](#konsolidacja-linking)
+    - [Podsumowanie](#podsumowanie)
+    - [Przykład](#przykład-6)
   - [Pierwszy program](#pierwszy-program)
   - [Jak to uruchomić?](#jak-to-uruchomić)
     - [GNU assembly](#gnu-assembly)
     - [NASM](#nasm)
     - [makefile - przydatne](#makefile---przydatne)
     - [przedsmak inżynierii wstecznej (*reverse engineering*) - `objdump`](#przedsmak-inżynierii-wstecznej-reverse-engineering---objdump)
-  - [Wywołania systemowe](#wywołania-systemowe)
+  - [Wywołania systemowe (System Calls)](#wywołania-systemowe-system-calls)
+      - [Jak działają wywołania systemowe?](#jak-działają-wywołania-systemowe)
+      - [Wywoływanie wywołań systemowych w asemblerze](#wywoływanie-wywołań-systemowych-w-asemblerze)
+    - [Przykład dla x86 (32-bit) w składni AT\&T](#przykład-dla-x86-32-bit-w-składni-att)
+    - [Przykład dla x86\_64 (64-bit) w składni AT\&T](#przykład-dla-x86_64-64-bit-w-składni-att)
   - [Skoki](#skoki)
     - [Skok bezwarunkowy](#skok-bezwarunkowy)
     - [Skoki warunkowe](#skoki-warunkowe)
     - [Instrukcja `loop`](#instrukcja-loop)
+    - [Działanie instrukcji `loop`](#działanie-instrukcji-loop)
   - [Wyrażenia warunkowe i pętle](#wyrażenia-warunkowe-i-pętle)
+    - [Wyrażenia Warunkowe](#wyrażenia-warunkowe)
+      - [Przykład: `if` w asemblerze](#przykład-if-w-asemblerze)
+    - [Pętle](#pętle)
+      - [Przykład: `for` w asemblerze](#przykład-for-w-asemblerze)
+      - [Przykład: `while` w asemblerze](#przykład-while-w-asemblerze)
   - [Konwencje wywołania funkcji](#konwencje-wywołania-funkcji)
     - [Konwencje wywoływania funkcji w System V ABI dla x86](#konwencje-wywoływania-funkcji-w-system-v-abi-dla-x86)
       - [x86 (32-bit)](#x86-32-bit)
@@ -552,10 +566,87 @@ ABI pozwala na współdziałanie skompilowanych programów i bibliotek różnych
 ## Jak właściwie wygląda program?
 
 ![Memory layout of C programs](https://media.geeksforgeeks.org/wp-content/uploads/memoryLayoutC.jpg)
+*Memory layout of C programs*
+
+Program jest podzielony na kilka sekcji. Najważniejsze z nich to:
+
+- sekcja `text`
+  - Zawiera kod wykonywalny programu, czyli instrukcje maszynowe.
+  - Jest oznaczona jako tylko do odczytu i wykonywalna, aby zapobiec modyfikacjom kodu podczas jego wykonywania.
+
+- sekcja `data`
+  - Przechowuje dane inicjalizowane, takie jak zmienne globalne i statyczne, które mają zdefiniowane wartości początkowe.
+  - Jest zapisywalna, ponieważ wartości tych zmiennych mogą się zmieniać w trakcie działania programu.
+
+- sekcja `bss`
+  - Przechowuje dane niezainicjalizowane, takie jak zmienne globalne i statyczne, które są zadeklarowane, ale nie mają przypisanych wartości początkowych.
+  - Zajmuje miejsce w pamięci, ale nie jest zapisana w pliku wykonywalnym; jest wypełniana zerami w trakcie inicjalizacji programu.
+
+- sekcja `rodata`
+  - Przechowuje stałe dane tylko do odczytu, takie jak literały stringów, stałe liczby i inne wartości, które nie zmieniają się podczas wykonywania programu.
+  - Jest oznaczona jako tylko do odczytu, aby zapewnić, że dane te nie zostaną zmodyfikowane.
+
+- stos (ang. *stack*)
+  - Używany do przechowywania lokalnych zmiennych funkcji, adresów powrotu, oraz do zarządzania wywołaniami funkcji.
+  - stos rośnie w dół, czyli w kierunku niższych adresów pamięci.
+Jest zarządzany automatycznie przez procesor i kompilator w trakcie wykonywania programu.
+
+- sterta (ang. *heap*)
+  - Przechowuje dynamicznie alokowane dane, które są zarządzane ręcznie przez programistę za pomocą funkcji alokujących (np. `malloc` w C) i dealokujących (np. `free`).
+  - Sterta rośnie w górę, czyli w kierunku wyższych adresów pamięci.
+  - Umożliwia elastyczne zarządzanie pamięcią w trakcie działania programu, ale wymaga odpowiedniego zarządzania, aby unikać wycieków pamięci i fragmentacji.
+  - Programista musi sam zarządzać tą pamięcią, czyli tworzyć i usuwać dane, kiedy są potrzebne lub już nie są używane.
 
 ## Kompilacja i konsolidacja
 
 ![C compilation process](https://daniao.ws/notes/pba/images/compilation-process.png)
+
+### Kompilacja
+
+**Kompilacja** to proces przekształcania kodu źródłowego, napisanego w języku programowania wysokiego poziomu (jak C lub C++), na kod maszynowy, który może być bezpośrednio wykonany przez procesor. Proces kompilacji składa się z kilku etapów:
+
+1. **Preprocessing**:
+   - Przed właściwą kompilacją, kod źródłowy przechodzi przez preprocesor. Preprocesor rozwija makra, wstawia pliki nagłówkowe (`#include`), i usuwa komentarze. Wynik tego etapu to przetworzony kod źródłowy.
+
+2. **Kompilacja**:
+   - Przetworzony kod źródłowy jest przekształcany w kod asemblera. Kompilator analizuje kod źródłowy, sprawdza poprawność składni i semantyki, a następnie generuje kod asemblera.
+
+3. **Asemblacja**:
+   - Kod asemblera jest przekształcany w kod maszynowy przez asembler. Wynikiem jest plik obiektowy, który zawiera binarną reprezentację kodu programu, gotową do wykonania przez procesor.
+
+### Konsolidacja (Linking)
+
+**Konsolidacja** (ang. *linking*) to proces łączenia jednego lub więcej plików obiektowych oraz bibliotek w jeden plik wykonywalny. Ten etap jest wykonywany przez linker (konsolidator) i składa się z następujących kroków:
+
+1. **Łączenie kodu**:
+   - Linker zbiera wszystkie pliki obiektowe i biblioteki, które są wymagane przez program. Pliki obiektowe mogą pochodzić z różnych źródeł, na przykład z różnych modułów programu.
+
+2. **Rozwiązywanie referencji**:
+   - Linker sprawdza wszystkie odniesienia do funkcji i zmiennych w plikach obiektowych, aby upewnić się, że wszystkie odwołania są poprawne. Jeśli funkcja zdefiniowana w jednym pliku obiektowym jest używana w innym pliku obiektowym, linker łączy te odwołania.
+
+3. **Generowanie pliku wykonywalnego**:
+   - Po rozwiązaniu wszystkich referencji, linker generuje końcowy plik wykonywalny. Ten plik zawiera kod maszynowy, który może być bezpośrednio wykonany przez system operacyjny.
+
+### Podsumowanie
+
+- **Kompilacja**: Przekształcenie kodu źródłowego (np. w języku C) na kod maszynowy poprzez etapy preprocessing, kompilacja i asemblacja.
+- **Konsolidacja (Linking)**: Łączenie plików obiektowych i bibliotek w jeden plik wykonywalny, gotowy do uruchomienia.
+
+### Przykład
+
+1. **Kompilacja**:
+   - Plik `example.c` jest przetwarzany przez preprocesor, który rozwija makra i wstawia pliki nagłówkowe.
+   - Kompilator przekształca przetworzony kod w kod asemblera.
+   - Asembler przekształca kod asemblera w plik obiektowy `example.o`.
+
+2. **Konsolidacja**:
+   - Linker łączy `example.o` z bibliotekami standardowymi, tworząc plik wykonywalny `example`.
+
+```bash
+gcc -o example example.c
+```
+
+W powyższym poleceniu `gcc` (GNU Compiler Collection) wykonuje zarówno kompilację, jak i konsolidację, tworząc gotowy program `example`.
 
 ## Pierwszy program
 
@@ -949,17 +1040,270 @@ $ alias objdump
 objdump='objdump -d -Mintel --disassembler-color=color --visualize-jumps=extended-color'
 ```
 
-## Wywołania systemowe
+## Wywołania systemowe (System Calls)
+
+**Wywołania systemowe** to specjalne funkcje, które programy mogą wywoływać, aby skorzystać z usług oferowanych przez system operacyjny, takich jak odczyt i zapis plików, zarządzanie pamięcią, czy komunikacja sieciowa. Wywołania te umożliwiają programom interakcję z systemem operacyjnym na niskim poziomie.
+
+#### Jak działają wywołania systemowe?
+
+1. **Zgłoszenie żądania**: Program zgłasza żądanie do systemu operacyjnego poprzez wywołanie systemowe.
+2. **Przejście do trybu jądra**: Procesor przełącza się w tryb jądra, który ma wyższe uprawnienia.
+3. **Wykonanie funkcji jądra**: System operacyjny wykonuje odpowiednią funkcję jądra.
+4. **Powrót do trybu użytkownika**: Procesor wraca do trybu użytkownika, kontynuując wykonanie programu.
+
+#### Wywoływanie wywołań systemowych w asemblerze
+
+Wywołania systemowe są realizowane przez ustawienie odpowiednich wartości w rejestrach i użycie instrukcji specjalnej, która przełącza procesor w tryb jądra. W zależności od architektury (x86 lub x86_64) i systemu operacyjnego, szczegóły mogą się różnić.
+
+### Przykład dla x86 (32-bit) w składni AT&T
+
+1. **Ustawienie numeru wywołania systemowego w rejestrze `eax`.**
+2. **Ustawienie argumentów wywołania w odpowiednich rejestrach (`ebx`, `ecx`, `edx`, `esi`, `edi`).**
+3. **Użycie instrukcji `int $0x80` do przełączenia w tryb jądra i wykonania wywołania systemowego.**
+
+Przykład: Wywołanie systemowe `write` (numer 4) do zapisu tekstu na standardowe wyjście:
+
+```asm
+.section .data
+msg:
+    .ascii "Hello, World!\n"
+len = . - msg
+
+.section .text
+.global _start
+_start:
+    movl $4, %eax        # Numer wywołania systemowego (sys_write)
+    movl $1, %ebx        # Deskryptor pliku (1 = stdout)
+    movl $msg, %ecx      # Adres bufora
+    movl $len, %edx      # Długość bufora
+    int $0x80            # Przełączenie do trybu jądra
+
+    movl $1, %eax        # Numer wywołania systemowego (sys_exit)
+    xorl %ebx, %ebx      # Kod wyjścia
+    int $0x80            # Przełączenie do trybu jądra
+```
+
+### Przykład dla x86_64 (64-bit) w składni AT&T
+
+1. **Ustawienie numeru wywołania systemowego w rejestrze `rax`.**
+2. **Ustawienie argumentów wywołania w odpowiednich rejestrach (`rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`).**
+3. **Użycie instrukcji `syscall` do przełączenia w tryb jądra i wykonania wywołania systemowego.**
+
+Przykład: Wywołanie systemowe `write` (numer 1) do zapisu tekstu na standardowe wyjście:
+
+```asm
+.section .data
+msg:
+    .ascii "Hello, World!\n"
+len = . - msg
+
+.section .text
+.global _start
+_start:
+    mov $1, %rax         # Numer wywołania systemowego (sys_write)
+    mov $1, %rdi         # Deskryptor pliku (1 = stdout)
+    mov $msg, %rsi       # Adres bufora
+    mov $len, %rdx       # Długość bufora
+    syscall              # Przełączenie do trybu jądra
+
+    mov $60, %rax        # Numer wywołania systemowego (sys_exit)
+    xor %rdi, %rdi       # Kod wyjścia
+    syscall              # Przełączenie do trybu jądra
+```
 
 ## Skoki
 
+**Skok** (ang. *jump*) to instrukcja w asemblerze, która zmienia przepływ wykonywania programu. Zamiast wykonywać kolejne instrukcje w liniowej kolejności, skok powoduje przejście do innej instrukcji w programie.
+
+Skoki są podstawą do implementacji takich struktur programistycznych jak pętle, warunki (if-else) oraz wywołania funkcji. Skoki mogą być bezwarunkowe (zawsze się wykonują) lub warunkowe (wykonują się tylko, jeśli spełniony jest określony warunek).
+
 ### Skok bezwarunkowy
+
+Instrukcja skoku bezwarunkowego zawsze powoduje przejście do wskazanego adresu.
+
+```asm
+.section .text
+.global _start
+
+_start:
+    jmp end       # Skok bezwarunkowy do etykiety "end"
+
+middle:
+    # Ta instrukcja zostanie pominięta
+    nop
+
+end:
+    # Instrukcje w tej części będą wykonane
+    nop           # No Operation - instrukcja, która nic nie robi
+```
 
 ### Skoki warunkowe
 
+Instrukcje skoku warunkowego powodują przejście do wskazanego adresu tylko wtedy, gdy spełniony jest określony warunek.
+
+- `je label` (skok, jeśli równe)
+- `jne label` (skok, jeśli nie równe)
+- `jg label` (skok, jeśli większe)
+- `jl label` (skok, jeśli mniejsze)
+
+```asm
+.section .text
+.global _start
+
+_start:
+    mov $5, %eax      # Załaduj wartość 5 do rejestru %eax
+    cmp $5, %eax      # Porównaj wartość 5 z zawartością rejestru %eax
+    je equal          # Skocz do etykiety "equal", jeśli wartości są równe
+
+    # Instrukcje w tej części będą pominięte, jeśli %eax == 5
+    nop
+
+equal:
+    # Instrukcje w tej części będą wykonane, jeśli %eax == 5
+    nop               # No Operation - instrukcja, która nic nie robi
+
+```
+
 ### Instrukcja `loop`
 
+Instrukcja `loop` jest specjalną instrukcją w asemblerze, która służy do tworzenia pętli. Wykonuje się ją w połączeniu z rejestrem licznika pętli, czyli rejestrem `ecx` (dla 32-bitowych) lub `rcx` (dla 64-bitowych). Działanie instrukcji `loop` polega na zmniejszeniu wartości w rejestrze licznika i wykonaniu skoku do określonej etykiety, dopóki licznik nie osiągnie zera.
+
+### Działanie instrukcji `loop`
+
+1. **Zmniejszenie licznika**:
+   - Instrukcja `loop` zmniejsza wartość rejestru `ecx` (32-bit) lub `rcx` (64-bit) o 1.
+
+2. **Sprawdzenie wartości licznika**:
+   - Po zmniejszeniu wartości licznika, sprawdzana jest jego wartość.
+   
+3. **Skok lub kontynuacja**:
+   - Jeśli wartość licznika jest różna od zera, wykonywany jest skok do wskazanej etykiety.
+   - Jeśli wartość licznika wynosi zero, wykonywanie programu kontynuuje się od następnej instrukcji po `loop`.
+
+Przykład w składni AT&T dla x86 (32-bit):
+
+```asm
+.section .data
+message:
+    .ascii "Hello, World!\n"
+
+.section .text
+.global _start
+
+_start:
+    movl $5, %ecx          # Ustaw licznik pętli na 5
+    movl $message, %ebx    # Załaduj adres komunikatu do %ebx
+
+loop_start:
+    # W tej części można umieścić dowolne instrukcje
+    movl $4, %eax          # Numer wywołania systemowego (sys_write)
+    movl $1, %edi          # Deskryptor pliku (1 = stdout)
+    movl $message, %esi    # Adres bufora
+    movl $14, %edx         # Długość bufora (14 znaków)
+    int $0x80              # Przełączenie do trybu jądra (wywołanie systemowe)
+
+    loop loop_start        # Instrukcja pętli, skok do loop_start, jeśli %ecx != 0
+
+    # Po zakończeniu pętli wyjście z programu
+    movl $1, %eax          # Numer wywołania systemowego (sys_exit)
+    xorl %ebx, %ebx        # Kod wyjścia
+    int $0x80              # Przełączenie do trybu jądra (wywołanie systemowe)
+```
+
 ## Wyrażenia warunkowe i pętle
+
+### Wyrażenia Warunkowe
+
+Wyrażenia warunkowe w asemblerze działają poprzez porównanie wartości i skok do określonej części kodu w zależności od wyniku porównania. Najczęściej używaną instrukcją do porównania jest `cmp`, a do skoków warunkowych `je`, `jne`, `jg`, `jl`, itp.
+
+#### Przykład: `if` w asemblerze
+
+```asm
+.section .data
+val:    .long 10
+
+.section .text
+.global _start
+
+_start:
+    movl val, %eax      # Załaduj wartość zmiennej 'val' do rejestru eax
+    cmpl $10, %eax      # Porównaj wartość w eax z 10
+    je equal            # Skocz do 'equal' jeśli eax == 10
+
+not_equal:
+    # Kod wykonywany, jeśli eax != 10
+    nop
+    jmp end             # Skocz do końca, aby pominąć sekcję 'equal'
+
+equal:
+    # Kod wykonywany, jeśli eax == 10
+    nop
+
+end:
+    # Wyjście z programu
+    movl $1, %eax       # sys_exit
+    xorl %ebx, %ebx     # Kod wyjścia 0
+    int $0x80
+```
+
+### Pętle
+
+Pętle w asemblerze mogą być realizowane na różne sposoby, na przykład przy użyciu instrukcji `loop` lub poprzez użycie skoków warunkowych.
+
+#### Przykład: `for` w asemblerze
+
+```asm
+.section .data
+counter:    .long 5
+
+.section .text
+.global _start
+
+_start:
+    movl counter, %ecx      # Załaduj wartość zmiennej 'counter' do rejestru ecx
+
+loop_start:
+    # Kod wykonywany w pętli
+    nop
+
+    loop loop_start         # Zmniejsz ecx i skocz do loop_start, jeśli ecx != 0
+
+    # Wyjście z programu
+    movl $1, %eax           # sys_exit
+    xorl %ebx, %ebx         # Kod wyjścia 0
+    int $0x80
+```
+
+#### Przykład: `while` w asemblerze
+
+```asm
+.section .data
+val:    .long 5
+
+.section .text
+.global _start
+
+_start:
+    movl val, %eax      # Załaduj wartość zmiennej 'val' do rejestru eax
+
+while_start:
+    cmpl $0, %eax       # Porównaj wartość eax z 0
+    jle while_end       # Skocz do 'while_end', jeśli eax <= 0
+
+    # Kod wykonywany w pętli
+    nop
+
+    decl %eax           # Zmniejsz wartość eax o 1
+    jmp while_start     # Skocz do początku pętli
+
+while_end:
+    # Wyjście z programu
+    movl $1, %eax       # sys_exit
+    xorl %ebx, %ebx     # Kod wyjścia 0
+    int $0x80
+```
+
+W obu przypadkach, tworzenie wyrażeń warunkowych i pętli w asemblerze wymaga ręcznego zarządzania rejestrami i kontrolowania przepływu programu za pomocą skoków.
 
 ## Konwencje wywołania funkcji
 
