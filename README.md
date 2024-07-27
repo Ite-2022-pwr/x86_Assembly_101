@@ -98,7 +98,7 @@ Powodzenia <3
   - [Ramka stosu](#ramka-stosu)
   - [Debugger (GDB)](#debugger-gdb)
   - [Łączenie C z asemblerem](#łączenie-c-z-asemblerem)
-    - [Biblioteka języka C w asemblerze \[x\]](#biblioteka-języka-c-w-asemblerze-x)
+    - [Biblioteka języka C w asemblerze](#biblioteka-języka-c-w-asemblerze)
     - [Własne funkcje z C w asemblerze](#własne-funkcje-z-c-w-asemblerze)
     - [Wywoływanie funkcji napisanych w asemblerze z poziomu C](#wywoływanie-funkcji-napisanych-w-asemblerze-z-poziomu-c)
     - [Inline assembly \[x\]](#inline-assembly-x)
@@ -1636,7 +1636,7 @@ Jak to zrobić? Trzeba powiedzieć linkerowi, gdzie ma szukać funkcji, poniewa�
 
 Należy również pamiętać o [konwencjach wywołania funkcji](#konwencje-wywołania-funkcji).
 
-### Biblioteka języka C w asemblerze [x]
+### Biblioteka języka C w asemblerze
 
 Przykład w `nasm` w trybie 64-bitowym:
 
