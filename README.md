@@ -87,6 +87,7 @@ Powodzenia <3
     - [Pętle](#pętle)
       - [Przykład: `for` w asemblerze](#przykład-for-w-asemblerze)
       - [Przykład: `while` w asemblerze](#przykład-while-w-asemblerze)
+  - [Funkcje](#funkcje)
   - [Konwencje wywołania funkcji](#konwencje-wywołania-funkcji)
     - [Konwencje wywoływania funkcji w System V ABI dla x86](#konwencje-wywoływania-funkcji-w-system-v-abi-dla-x86)
       - [x86 (32-bit)](#x86-32-bit)
@@ -95,12 +96,15 @@ Powodzenia <3
     - [Przykład (x86-64)](#przykład-x86-64)
     - [Przykład (x86)](#przykład-x86)
   - [Ramka stosu](#ramka-stosu)
-  - [Pisanie i wywoływanie funkcji](#pisanie-i-wywoływanie-funkcji)
   - [Debugger (GDB)](#debugger-gdb)
   - [Łączenie C z asemblerem](#łączenie-c-z-asemblerem)
-  - [Operacje zmiennoprzecinkowe na FPU](#operacje-zmiennoprzecinkowe-na-fpu)
-  - [SIMD](#simd)
-  - [AVX](#avx)
+    - [Biblioteka języka C w asemblerze \[x\]](#biblioteka-języka-c-w-asemblerze-x)
+    - [Własne funkcje z C w asemblerze](#własne-funkcje-z-c-w-asemblerze)
+    - [Wywoływanie funkcji napisanych w asemblerze z poziomu C](#wywoływanie-funkcji-napisanych-w-asemblerze-z-poziomu-c)
+    - [Inline assembly \[x\]](#inline-assembly-x)
+  - [Operacje zmiennoprzecinkowe na FPU \[x\]](#operacje-zmiennoprzecinkowe-na-fpu-x)
+  - [SIMD \[x\]](#simd-x)
+  - [AVX \[x\]](#avx-x)
   - [**Przykładowe programy**](#przykładowe-programy)
     - [NWD](#nwd)
     - [Basic Input/Output](#basic-inputoutput)
@@ -948,7 +952,7 @@ $ gcc -ggdb -no-pie hello.o -o hello
 
 W tym przypadku `gcc` robi nam głównie za linker.
 
-Flagi `-g` i `-F` oznaczają, że chcemy zostawić informacje do debuggowania, a `dwarf` to format debuggowania. Podobnie z flagą `-ggdb`. Na razie się tym nie przejmuj, ale to się przyda dalej.
+Flagi `-g` i `-F` oznaczają, że chcemy zostawić informacje do debuggowania, a `dwarf` to format debuggowania. Podobnie z flagą `-ggdb`. Na razie się tym nie przejmuj, ale to się przyda [dalej](#debugger-gdb).
 
 ### makefile - przydatne
 
@@ -956,7 +960,7 @@ Flagi `-g` i `-F` oznaczają, że chcemy zostawić informacje do debuggowania, a
 
 - Dla GNU assembly
 
-```
+```makefile
 hello: hello.o
 	ld -o hello hello.o
 hello.o: hello.asm
@@ -965,14 +969,14 @@ hello.o: hello.asm
 
 lub
 
-```
+```makefile
 hello: hello.s 
 	gcc -o hello hello.s -no-pie -m32
 ```
 
 - Dla NASM
 
-```
+```makefile
 hello: hello.o
 	ld -o hello hello.o
 hello.o: hello.asm
@@ -1043,6 +1047,8 @@ objdump='objdump -d -Mintel --disassembler-color=color --visualize-jumps=extende
 ## Wywołania systemowe (System Calls)
 
 **Wywołania systemowe** to specjalne funkcje, które programy mogą wywoływać, aby skorzystać z usług oferowanych przez system operacyjny, takich jak odczyt i zapis plików, zarządzanie pamięcią, czy komunikacja sieciowa. Wywołania te umożliwiają programom interakcję z systemem operacyjnym na niskim poziomie.
+
+> Listę linuksowych numerów wywołań systemowych dla x86 można znaleźć [tutaj](https://syscalls32.paolostivanin.com/), a dla x86_64 [tutaj](https://filippo.io/linux-syscall-table/).
 
 #### Jak działają wywołania systemowe?
 
@@ -1305,6 +1311,59 @@ while_end:
 
 W obu przypadkach, tworzenie wyrażeń warunkowych i pętli w asemblerze wymaga ręcznego zarządzania rejestrami i kontrolowania przepływu programu za pomocą skoków.
 
+## Funkcje
+
+Funkcje to bloki kodu zajmujące pewien obszar pamięci. Wykonują ciągi instrukcji w celu rozwiązania jakiegoś zadania.
+
+Przykład:
+
+```asm
+section .data
+  msg db "Hello",0
+  msgLen equ $-msg
+
+section .text
+
+global _start
+
+_start:
+  call printText  ; wywołanie funkcji
+
+  mov rax, 60
+  mov rdi, 0
+  syscall
+
+; funkcja
+printText:
+  mov rax, 1  ; write syscall
+  mov rdi, msg
+  mov rsi, msgLen
+
+  ret   ; powrót z funkcji
+```
+
+Funkcje wywołujemy za pomocą instrukcji `call` wraz z nazwą funkcji (zwykły label, tak jak w przypadku `_start` czy [pętli](#wyrażenia-warunkowe-i-pętle)). Ta instrukcja powoduje wrzucenie na [stos](#stos) adresu, który będzie *adresem powrotu* z funkcji. Dzieje się tak dlatego, aby możliwy był w ogóle powrót z funkcji z powrotem tam, gdzie ją wywołaliśmy. Następnie wykonywany jest [skok](#skoki) do obszaru pamięci, w którym znajduje się funkcja.
+
+Powrót z funkcji odbywa się z użyciem instrukcji `ret`, która pobiera ze stosu adres powrotu i skacze w to miejsce - czyli tam, gdzie wywołano funkcje.
+
+Dla porównania, przykład w C:
+
+```cpp
+void funkcja()
+{
+  return;   // powrót z funkcji -> skok z powrotem
+}
+
+int main()
+{
+  funkcja();  // wywołanie funkcji -> skaczemy w inne miejsce
+
+  return 0;   // klasyk ;)
+}
+```
+
+A teraz pora omówić, jak przekazywać argumenty do funkcji i jak zwracać wartości.
+
 ## Konwencje wywołania funkcji
 
 Konwencje wywołania funkcji (calling conventions) to zestaw reguł określających sposób, w jaki funkcje w programowaniu przekazują argumenty, jak zwracają wartości oraz jak zarządzają stosami i rejestrami. Te reguły ustalają, które rejestry są używane do przekazywania argumentów, gdzie umieszczane są dodatkowe argumenty (np. na stosie), jak wartości są zwracane (w określonych rejestrach), oraz które rejestry muszą być zachowane (calle-saved) lub mogą być nadpisane (caller-saved). Konwencje wywołania są kluczowe dla zapewnienia kompatybilności między różnymi funkcjami i modułami, szczególnie gdy są kompilowane oddzielnie lub pochodzą od różnych dostawców. Przykładem takich konwencji jest System V ABI, używany w systemach UNIX-owych, w tym w systemach Linux na architekturach x86 i x86-64.
@@ -1443,6 +1502,7 @@ output_fmt_b: .asciz "Funkcja B: y = %d\n"
 
 # Funkcja B
 funkcjaB:
+    # prolog funkcji
     pushl %ebp            # Zapisz stary base pointer
     movl %esp, %ebp       # Ustaw nowy base pointer
     subl $8, %esp         # Alokacja miejsca na zmienne lokalne
@@ -1457,11 +1517,13 @@ funkcjaB:
     call printf
     addl $8, %esp         # Wyczyść stos
 
+    # epilog funkcji
     leave                 # Przywróć %ebp i %esp
     ret                   # Powrót
 
 # Funkcja A
 funkcjaA:
+    # prolog funkcji
     pushl %ebp            # Zapisz stary base pointer
     movl %esp, %ebp       # Ustaw nowy base pointer
     subl $8, %esp         # Alokacja miejsca na zmienne lokalne
@@ -1481,6 +1543,7 @@ funkcjaA:
     call funkcjaB
     addl $4, %esp         # Wyczyść stos
 
+    # epilog funkcji
     leave                 # Przywróć %ebp i %esp
     ret                   # Powrót
 
@@ -1522,17 +1585,320 @@ Ten kod w asemblerze pokazuje, jak tworzone i zarządzane są ramki stosu podcza
 
 Ramki stosu są tworzone i usuwane przy każdym wywołaniu funkcji, zarządzając pamięcią i kontrolą przepływu programu.
 
-## Pisanie i wywoływanie funkcji
-
 ## Debugger (GDB)
+
+Być może przyszło Ci kiedyś korzystać z debuggera w Intellij IDEA, PyCharmie czy Visual Studio - zatęsknisz za tym w przypadku asemblera.
+
+Debugger pozwala na uruchamianie programu linijka po linijce, instrukcja po instrukcji oraz podglądanie wartości poszczególnych zmiennych, a w przypadku asemblera - rejestrów.
+
+Debugger jest Twoim przyjacielem, ponieważ bez tego ciężko może być określić, co i gdzie się schraniło w swoim programie. Błędy w Pythonie czy Javie powiedzą Ci, w której linii, w której funkcji i jaki wystąpił błąd. W przypadku programów pisanych w asemblerze (aczkolwiek w C też), jedyną wiadomością będzie po prostu *Segmentation  fault* - i tyle. Dlatego warto zaznajomić się z asemblerem
+
+Popularnym debuggerem jest [GNU debugger (`gdb`)](https://www.youtube.com/watch?v=Dq8l1_-QgAc).
+
+Uruchomienie debuggera wygląda tak:
+
+```
+$ gdb ./program
+```
+
+Pierwszą rzeczą, którą należy zrobić jest ustawienie tzw. *breakpointa*, czyli miejsca, w którym wykonanie programu ma się zatrzymać i będzie można go uruchamiać krokowo, na przykład:
+
+```
+(gdb) b _start
+Breakpoint 1 at 0x401000
+```
+
+Niekoniecznie to musi być `_start`, jeśli chcemy badać konkretną funkcję to możemy podać jej nazwę.Warto (oczywiście nie na produkcji) dodawać informacje debugowe przy kompilacji, ponieważ bez tego `gdb` może zachowywać się nie tak, jak byśmy chcieli.
+
+Teraz program można uruchomić:
+
+```
+(gdb) run
+```
+
+Wykonanie programu zatrzyma się w pierwszym napotkanym breakpoincie.
+
+Przydatne polecenia:
+- `step` - pojedynczy krok
+- `next` - kontynuuje do kolejnego momentu w tej samej ramce stosu - czyli jak mamy instruckcję `call` to nie wskoczymy do wnętrza wywoływanej funkcji, tylko ją *przeskoczymy*
+- `continue` - kontynuuje do momentu napotkania breakpointa lub zakończenia działania programu
+- `info registers` - informacje o rejestrach w danym momencie
+- `print` - wypisuje wartość np. rejestru: `print $rax`
+- `x/s` - *examine string*, np. `x/s &hello` - wypisze string pod adresem wskazywanym przez label `hello`
+
+> Nie chce mi się omawiać każdego polecenia z osobna, dlatego znalazłem [taki filmik](https://www.youtube.com/watch?v=z5hi_YEBgT0) i [taką stronę](https://ncona.com/2019/12/debugging-assembly-with-gdb/) oraz [to](https://web.cecs.pdx.edu/~apt/cs510comp/gdb.pdf)
 
 ## Łączenie C z asemblerem
 
-## Operacje zmiennoprzecinkowe na FPU
+Łączenie C z asemblerem jest proste i przydatne. Po skompilowaniu, kod C i tak staje się kodem asemblera prawda? Ja np. lubię sobie użyć funkcji `printf` w asemblerze jak chcę coś wypisać.
 
-## SIMD
+Jak to zrobić? Trzeba powiedzieć linkerowi, gdzie ma szukać funkcji, ponieważ to właśnie on jest odpowiedzialny za ogarnianie *gdzie co ma być*.
 
-## AVX
+Należy również pamiętać o [konwencjach wywołania funkcji](#konwencje-wywołania-funkcji).
+
+### Biblioteka języka C w asemblerze [x]
+
+Przykład w `nasm` w trybie 64-bitowym:
+
+```asm
+section .data
+  printfFmt db "%d",10,0
+
+section .text
+
+extern printf   ; mówimy asemblerowi, że ta funkcja znajduje się w innym pliku
+
+global main:
+  push rbp
+  mov rbp, rsp
+
+  mov rax, 0    ; informujemy printf, że nie podajemy żadnych wartośći zmienno przecinkowych
+  mov rdi, printfFmt
+  mov rsi, 69         ; liczba do wstawienia w miejsce %d
+  call printf         ; wywołanie printf
+
+  leave
+  ret
+```
+
+Zdefiniowałem `main` zamiast `_start`, ponieważ do linkowania skorzystam z `gcc`, które dołączy mi bibliotekę standardową języka C i będzie szukał właśnie funkcji `main` (`_start` sobie doda sam):
+
+```
+$ nasm -f elf64 -g -F dwarf fibo.asm
+$ gcc -ggdb -no-pie -o fibo fibo.o
+```
+
+I to wszystko! Podobnie sprawa wygląda z innymi funkcjami. Trzeba również pamiętać o [konwencjach wywołania funkcji](#konwencje-wywołania-funkcji).
+
+### Własne funkcje z C w asemblerze
+
+W pliku `lib.c` umieściłem następujące funkcje, które zamierzam wywołać z poziomu asemblera:
+
+```cpp
+int addInt(int a, int b)
+{
+  return a + b;
+}
+
+float mulFloat(float a, float b)
+{
+  return a * b;
+}
+
+int findMin(int *a, int n)
+{
+  int mini = *a;
+  for (int i = 1; i < n; i++)
+  {
+    if (*(a + i) < mini)
+    {
+      mini = *(a + i);
+    }
+  }
+
+  return mini;
+}
+```
+*Plik lib.c*
+
+Natomiast kod asemblera prezentuje się następująco:
+
+```asm
+BITS 64
+
+%define EXIT_NR 60
+
+section .data
+  printfIntFmt db "%d",10,0
+  printfFloatFmt db "%.3f",10,0
+
+  arr dd 4, 3, 10, 2, 7, 5
+  arrLen dd 6
+
+  ai dd 4
+  bi dd 6
+
+  af dd 3.14
+  bf dd 4.2
+
+section .bss
+  mulFloatRes resd 1
+
+section .text
+
+; funkcje, których nie zdefiniowaliśmy w tym pliku
+; tak aby linker się nimi martwił, a nie asembler
+extern printf
+extern findMin
+extern addInt
+extern mulFloat
+
+global main
+
+main:
+  push rbp
+  mov rbp, rsp
+
+  xor rax, rax        ; rax = 0
+  mov rdi, arr        ; pierwszy argument funkcji (int *a)
+  mov rsi, [arrLen]   ; drugi argument (int n)
+  call findMin        ; wywołanie funkcji
+
+  mov rsi, rax            ; wynik funkcji findMin (int mini)
+  mov rdi, printfIntFmt
+  xor rax, rax
+  call printf         ; wypisanie wartości
+
+  xor rax, rax
+  mov rdi, [ai]       ; int a
+  mov rsi, [bi]       ; int b
+  call addInt
+  
+  mov rsi, rax
+  mov rdi, printfIntFmt
+  xor rax, rax
+  call printf
+
+  ; o rejestrach xmm będzie przy okazji omawiania SIMD
+  movsd xmm0, [af]      ; float a  
+  movsd xmm1, [bf]      ; float b
+  mov rax, 2
+  call mulFloat
+
+  ; o floatach za moment, na razie nie wnikaj co to jest xd
+  cvtps2pd xmm0, xmm0 
+  mov rdi, printfFloatFmt
+  mov rax, 1
+  call printf
+
+  leave
+  mov rax, EXIT_NR
+  xor rdi, rdi
+  syscall
+```
+*Plik c_w_asm.asm*
+
+Jak to teraz skleić? Tak wygląda mój plik `makefile`:
+
+```makefile
+c_w_asm.out: c_w_asm.o lib.o
+	gcc -no-pie -ggdb -o c_w_asm.out c_w_asm.o lib.o
+c_w_asm.o: c_w_asm.asm
+	nasm -f elf64 -g -F dwarf c_w_asm.asm
+lib.o: lib.c
+	gcc -ggdb -c -o lib.o lib.c
+
+```
+*Plik makefile*
+
+Przeanalizujmy go od **dołu do góry**:
+- Polecenie `gcc -ggdb -c -o lib.o lib.c` wypluje mi plik *object* z pliku języka C, abym mógł go potem dokleić do kodu asemblera
+- Polecenie `nasm -f elf64 -g -F dwarf c_w_asm.asm` powinno być już znane
+- Polecenie `gcc -no-pie -ggdb -o c_w_asm.out c_w_asm.o lib.o` skleja otrzymane wcześniej pliki object w finalny plik wykonywalny. Używam `gcc`, ponieważ korzystam z funkcji `printf`, natomiast jeśli nie korzystasz z biblioteki standardowej to zwykłe `ld` powinno wystarczyć
+
+> W przypadku GNU assembly różnica będzie tylko w przypadku pliku asemblera i poleceniu przekształcającym ów kod na plik object. Wydaje mi się, że nawet można te wszystkie polecenia zastąpić jednym: `gcc -no-pie -o c_w_asm lib.c c_w_asm.s`
+
+### Wywoływanie funkcji napisanych w asemblerze z poziomu C
+
+Teraz na odwrót. Mam swoją "bibliotekę" w asemblerze:
+
+```asm
+BITS 64
+
+section .text
+
+global mulInt
+global addFloat
+global sumFloat
+
+mulInt:
+  push rbp
+  mov rbp, rsp
+
+  mov rax, rdi
+  mul rsi
+
+  leave
+  ret
+
+addFloat:
+  push rbp
+  mov rbp, rsp
+
+  addss xmm0, xmm1
+
+  leave
+  ret
+
+sumFloat:
+  push rbp
+  mov rbp, rsp
+
+  mov rcx, rsi
+  xorps xmm0, xmm0
+.loop:
+  mov rax, rsi
+  sub rax, rcx
+  movss xmm1, [rdi + rax * 4]
+  addss xmm0, xmm1
+  loop .loop
+
+  leave
+  ret
+```
+*Plik lib.asm*
+
+Natomiast jej wykorzystanie w C będzie wyglądać tak:
+
+```cpp
+#include <stdio.h>
+
+// tak aby kompilator nie krzyczał
+extern int mulInt(int a, int b);
+extern float addFloat(float a, float b);
+extern float sumFloat(float *a, int n);
+
+int main(int argc, char *argv[])
+{
+  printf("%d\n", mulInt(2, 3));
+  printf("%.3f\n", addFloat(3.14, 4.20));
+  float af[4] = {21.37, 6.9, 4.20, 1.681}; 
+  printf("%.3f\n", sumFloat(af, 4));
+  return 0;
+}
+```
+*Plik asm_w_c.c*
+
+> Bardzo ważne jest pamiętanie o [konwencjach wywołania funkcji](#konwencje-wywołania-funkcji), bo inaczej wszystko szlag trafi!
+
+Sklejanie tego w program jest praktycznie takie samo jak wcześniej:
+
+```makefile
+asm_w_c.out: lib.o asm_w_c.o
+	gcc -no-pie -ggdb -o asm_w_c.out lib.o asm_w_c.o
+asm_w_c.o: asm_w_c.c
+	gcc -no-pie -c -o asm_w_c.o asm_w_c.c
+lib.o: lib.asm
+	nasm -f elf64 -g -F dwarf lib.asm
+```
+
+> Ponownie, w przypadku GNU assembly różnica będzie tylko w przypadku pliku asemblera i poleceniu przekształcającym ów kod na plik object. Wydaje mi się, że nawet można te wszystkie polecenia zastąpić jednym: `gcc -no-pie -o c_w_asm lib.s asm_w_c.c`
+
+### Inline assembly [x]
+
+Coming soon...
+
+## Operacje zmiennoprzecinkowe na FPU [x]
+
+Coming soon...
+
+## SIMD [x]
+
+Coming soon...
+
+## AVX [x]
+
+Coming soon...
 
 ## **Przykładowe programy**
 
@@ -1540,7 +1906,7 @@ Myślę, że najlepiej to będzie zrozumieć analizując jakieś programy - patr
 
 Dlatego wrzucę kilka programów, które miałem okazję napisać. Spora część z jest napisana w NASM, więc zalecam samodzielne przepisanie ich na GNU assembly, jeśli Twój prowadzący tego wymaga.
 
-Różne programy znajdują się też w innych repozytoriach z [OiAK](https://github.com/Ite-2022-pwr/OiAK).
+Różne programy znajdują się też w innych repozytoriach z [OiAK](https://github.com/Ite-2022-pwr/OiAK) oraz [WdWK](https://github.com/Ite-2022-pwr/WdWK).
 
 ### NWD
 
@@ -1550,6 +1916,7 @@ Różne programy znajdują się też w innych repozytoriach z [OiAK](https://git
   .global _start
 
 _start:
+  # prolog funkcji
   push  %ebp
   mov   %esp, %ebp
 
@@ -1557,6 +1924,7 @@ _start:
   push $24          # b
   call  nwd
 
+  # epilog funkcji
   mov   %ebp, %esp
   pop   %ebp
 
@@ -1565,6 +1933,7 @@ _start:
   int   $0x80
 
 nwd:
+  # prolog funkcji
   push  %ebp
   mov   %esp, %ebp
 
@@ -1585,6 +1954,7 @@ nwd:
     jmp   while
 
   return:
+  # epilog funkcji
   mov   %ebp, %esp
   pop   %ebp
   
